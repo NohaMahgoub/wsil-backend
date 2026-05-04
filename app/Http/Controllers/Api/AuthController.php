@@ -22,6 +22,16 @@ class AuthController extends Controller
             'vehicle_model' => 'nullable|string',
             'vehicle_plate' => 'nullable|string',
             'national_id'   => 'required_if:role,driver|nullable|string',
+            ], [
+            'name.required'          => 'يرجى إدخال الاسم الكامل.',
+            'phone.required'         => 'يرجى إدخال رقم الهاتف.',
+            'phone.unique'           => 'رقم الهاتف مسجل مسبقاً.',
+            'password.required'      => 'يرجى إدخال كلمة المرور.',
+            'password.min'           => 'كلمة المرور يجب أن تكون 6 أحرف على الأقل.',
+            'password.confirmed'     => 'كلمة المرور غير متطابقة.',
+            'role.required'          => 'يرجى تحديد نوع الحساب.',
+            'vehicle_type.required_if' => 'يرجى اختيار نوع المركبة.',
+            'national_id.required_if'  => 'يرجى إدخال الرقم الوطني.',
         ]);
 
         $user = User::create([
