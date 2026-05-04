@@ -22,10 +22,6 @@
 Homestead.json
 Homestead.yaml
 Thumbs.db
-vendor/
-node_modules/
-.env
 storage/app/firebase-credentials.json
 storage/logs/
 bootstrap/cache/
-.phpunit.result.cache
