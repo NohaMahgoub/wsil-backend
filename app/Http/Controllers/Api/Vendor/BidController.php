@@ -31,6 +31,18 @@ class BidController extends Controller
             return response()->json(['message' => 'Bid does not belong to this order.'], 422);
         }
 
+         // Check if driver already has an active delivery
+        $activeDelivery = Delivery::where('driver_id', $bid->driver_id)
+            ->whereIn('status', ['in_progress', 'picking_up', 'in_transit'])
+            ->exists();
+
+        if ($activeDelivery) {
+            return response()->json([
+                'message' => 'هذا السائق لديه توصيل نشط حالياً. يرجى اختيار سائق آخر.',
+            ], 422);
+        }
+
+
         // Calculate service fee (e.g. 10%)
         $serviceFee   = round($bid->price * 0.10, 2);
         $totalCharged = $bid->price + $serviceFee;

@@ -31,6 +31,15 @@ Route::post('/login',    [AuthController::class, 'login']);
 //app version
 Route::post('/version/check', [App\Http\Controllers\Api\AppVersionController::class, 'check']);
 
+//bank info
+Route::get('/bank-details', function () {
+    return response()->json([
+        'bank_name'      => config('app.bank_name', 'بنك الخرطوم'),
+        'account_name'   => config('app.account_name', 'وصل للتوصيل'),
+        'account_number' => config('app.account_number', '1234567890'),
+    ]);
+});
+
 // Protected routes
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
@@ -94,7 +103,8 @@ Route::middleware(['auth:sanctum', 'role:driver'])
         Route::post('orders/{order}/update-location',     [DriverDeliveryController::class, 'updateLocation']);
         Route::post('orders/{order}/start-pickup',  [DriverDeliveryController::class, 'startPickup']);
         Route::post('orders/{order}/start-transit', [DriverDeliveryController::class, 'startTransit']);
-        
+        Route::post('orders/{order}/cancel', [DriverDeliveryController::class, 'cancel']);
+
         // Withdrawals
         Route::get('withdrawals',                    [DriverWithdrawalController::class, 'index']);
         Route::post('withdrawals',                   [DriverWithdrawalController::class, 'store']);

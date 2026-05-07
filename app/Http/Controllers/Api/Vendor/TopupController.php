@@ -8,13 +8,22 @@ use Illuminate\Http\Request;
 class TopupController extends Controller
 {
     // Vendor submits a top-up request
- public function store(Request $request)
+    public function store(Request $request)
     {
         $request->validate([
-            'amount'             => 'required|numeric|min:50',
+            'amount'             => 'required|numeric|min:10000',
             'bank_name'          => 'required|string',
-            'transfer_reference' => 'required|string',
+            'transfer_reference' => 'required|string|unique:topup_requests,transfer_reference',
             'receipt'            => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:5120',
+        ], [
+            'amount.required'             => 'يرجى إدخال المبلغ.',
+            'amount.numeric'              => 'يجب أن يكون المبلغ رقماً.',
+            'amount.min'                  => 'الحد الأدنى للشحن هو 10000 SDG.',
+            'bank_name.required'          => 'يرجى إدخال اسم البنك.',
+            'transfer_reference.required' => 'يرجى إدخال رقم الحوالة.',
+            'transfer_reference.unique'   => 'رقم الحوالة مستخدم مسبقاً. يرجى التحقق من الرقم.',
+            'receipt.mimes'               => 'يجب أن يكون الإيصال صورة أو ملف PDF.',
+            'receipt.max'                 => 'حجم الإيصال يجب أن لا يتجاوز 5 ميغابايت.',
         ]);
 
         // Store receipt file

@@ -22,10 +22,15 @@ class WithdrawalController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'amount'         => 'required|numeric|min:50',
+            'amount'         => 'required|numeric|min:10000',
             'bank_name'      => 'required|string',
             'account_number' => 'required|string',
-            'iban'           => 'required|string',
+        ], [
+            'amount.required'         => 'يرجى إدخال المبلغ.',
+            'amount.numeric'          => 'يجب أن يكون المبلغ رقماً.',
+            'amount.min'              => 'الحد الأدنى للسحب هو 10000 SDG.',
+            'bank_name.required'      => 'يرجى إدخال اسم البنك.',
+            'account_number.required' => 'يرجى إدخال رقم الحساب.',
         ]);
 
         $wallet = $request->user()->wallet;
@@ -51,20 +56,17 @@ class WithdrawalController extends Controller
         }
 
         DB::transaction(function () use ($request, $wallet) {
-            // Debit wallet immediately (hold the amount)
             $wallet->debit(
                 amount:      $request->amount,
                 description: 'طلب سحب — في انتظار موافقة المسؤول',
                 reference:   'WITHDRAWAL-PENDING',
             );
 
-            // Create withdrawal request
             WithdrawalRequest::create([
                 'driver_id'      => $request->user()->id,
                 'amount'         => $request->amount,
                 'bank_name'      => $request->bank_name,
                 'account_number' => $request->account_number,
-                'iban'           => $request->iban,
                 'status'         => 'pending',
             ]);
         });
@@ -89,7 +91,6 @@ class WithdrawalController extends Controller
         }
 
         DB::transaction(function () use ($withdrawal, $request) {
-            // Refund the held amount back to wallet
             $request->user()->wallet->credit(
                 amount:      $withdrawal->amount,
                 description: 'تم إلغاء طلب السحب — تم إعادة المبلغ',

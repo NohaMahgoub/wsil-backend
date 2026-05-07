@@ -1,13 +1,14 @@
 <?php
 namespace App\Http\Controllers\Api\Driver;
 
+use App\Events\DeliveryStatusChanged;
 use App\Http\Controllers\Controller;
 use App\Models\Delivery;
 use App\Models\DeliveryOrder;
+use App\Models\DeliveryStatusLog;
+use App\Models\OrderBid;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use App\Events\DeliveryStatusChanged;
-use App\Models\DeliveryStatusLog;
 
 class DeliveryController extends Controller
 {
@@ -87,6 +88,12 @@ class DeliveryController extends Controller
             'status'        => 'picking_up',
             'picking_up_at' => now(),
         ]);
+
+        // Auto-cancel all other active bids for this driver
+        OrderBid::where('driver_id', $request->user()->id)
+            ->where('order_id', '!=', $order->id)
+            ->where('status', 'pending')
+            ->update(['status' => 'cancelled']);
 
         DeliveryStatusLog::create([
             'delivery_id' => $delivery->id,
@@ -243,5 +250,61 @@ class DeliveryController extends Controller
             ->paginate(15);
 
         return response()->json($deliveries);
+    }
+
+    // Driver cancels delivery before pickup
+    public function cancel(Request $request, DeliveryOrder $order)
+    {
+        $delivery = $this->getActiveDelivery($order);
+
+        if (!$delivery || $delivery->driver_id !== $request->user()->id) {
+            return response()->json(['message' => 'غير مصرح.'], 403);
+        }
+
+        // Only allow cancel before picking_up
+        if (!in_array($order->status, ['assigned', 'active'])) {
+            return response()->json([
+                'message' => 'لا يمكن إلغاء التوصيل بعد استلام الطلب.',
+            ], 422);
+        }
+
+        DB::transaction(function () use ($order, $delivery, $request) {
+            // Cancel delivery
+            $delivery->update(['status' => 'cancelled']);
+
+            // Return order to open
+            $order->update(['status' => 'open']);
+
+            // Refund vendor
+            $order->vendor->wallet->credit(
+                amount:      $delivery->total_charged,
+                description: 'إعادة رسوم التوصيل — إلغاء السائق',
+                reference:   "DRIVER-CANCEL-{$order->id}",
+            );
+
+            // Cancel driver's bid
+            OrderBid::where('order_id', $order->id)
+                ->where('driver_id', $request->user()->id)
+                ->update(['status' => 'cancelled']);
+
+            DeliveryStatusLog::create([
+                'delivery_id' => $delivery->id,
+                'status'      => 'cancelled',
+                'changed_by'  => $request->user()->id,
+                'notes'       => 'السائق ألغى التوصيل',
+            ]);
+        });
+
+        try {
+            broadcast(new DeliveryStatusChanged(
+                orderId: $order->id,
+                status:  'open',
+                message: 'ألغى السائق التوصيل. الطلب متاح مجدداً.',
+            ));
+        } catch (\Exception $e) {}
+
+        return response()->json([
+            'message' => 'تم إلغاء التوصيل. تم إعادة المبلغ للبائع.',
+        ]);
     }
 }
