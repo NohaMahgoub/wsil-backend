@@ -210,7 +210,7 @@ const TopupsPage = () => {
       <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, padding: "20px" }}>
         {items.length === 0 && <div style={{ color: C.textSec, textAlign: "center", padding: 40 }}>لا توجد طلبات</div>}
         <table style={{ width: "100%", borderCollapse: "collapse" }}>
-          <thead><tr>{["الرقم","البائع","المبلغ","البنك","التاريخ","الحالة","الإيصال","الإجراءات"].map(h => <Th key={h}>{h}</Th>)}</tr></thead>
+          <thead><tr>{["الرقم","البائع","المبلغ","البنك","رقم الحوالة","التاريخ","الحالة","الإيصال","الإجراءات"].map(h => <Th key={h}>{h}</Th>)}</tr></thead>
           <tbody>
             {items.map(r => (
               <tr key={r.id}>
@@ -218,6 +218,7 @@ const TopupsPage = () => {
                 <Td><div style={{ fontWeight: 600 }}>{r.vendor?.name}</div></Td>
                 <Td><span style={{ fontSize: 15, fontWeight: 800, color: C.primary }}>SDG {r.amount}</span></Td>
                 <Td><span style={{ color: C.textSec }}>{r.bank_name}</span></Td>
+                <Td><span style={{ color: C.textSec }}>{r.transfer_reference}</span></Td>
                 <Td><span style={{ color: C.textSec, fontSize: 12 }}>{new Date(r.created_at).toLocaleDateString()}</span></Td>
                 <Td><Badge label={r.status.charAt(0).toUpperCase()+r.status.slice(1)} type={r.status} /></Td>
                 <Td>
@@ -264,14 +265,15 @@ const WithdrawalsPage = () => {
       <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, padding: "20px" }}>
         {items.length === 0 && <div style={{ color: C.textSec, textAlign: "center", padding: 40 }}>لا توجد طلبات سحب</div>}
         <table style={{ width: "100%", borderCollapse: "collapse" }}>
-          <thead><tr>{["الرقم","السائق","المبلغ","الحساب البنكي","التاريخ","الحالة","الإجراءات"].map(h => <Th key={h}>{h}</Th>)}</tr></thead>
+          <thead><tr>{["الرقم","السائق","المبلغ"," اسم الحساب ","رقم الحساب البنكي","التاريخ","الحالة","الإجراءات"].map(h => <Th key={h}>{h}</Th>)}</tr></thead>
           <tbody>
             {items.map(r => (
               <tr key={r.id}>
                 <Td><span style={{ color: C.orange, fontFamily: "monospace", fontWeight: 700 }}>WD-{r.id}</span></Td>
                 <Td><div style={{ fontWeight: 600 }}>{r.driver?.name}</div></Td>
                 <Td><span style={{ fontSize: 15, fontWeight: 800 }}>SDG {r.amount}</span></Td>
-                <Td><span style={{ color: C.textSec, fontSize: 12 }}>{r.bank_name} — {r.account_number}</span></Td>
+                <Td><span style={{ color: C.textSec, fontSize: 12 }}>{r.bank_name}</span></Td>
+                <Td><span style={{ color: C.textSec, fontSize: 12 }}>{r.account_number}</span></Td>
                 <Td><span style={{ color: C.textSec, fontSize: 12 }}>{new Date(r.created_at).toLocaleDateString()}</span></Td>
                 <Td><Badge label={r.status.charAt(0).toUpperCase()+r.status.slice(1)} type={r.status} /></Td>
                 <Td>
