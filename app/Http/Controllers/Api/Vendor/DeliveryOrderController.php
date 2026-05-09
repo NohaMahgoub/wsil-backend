@@ -88,17 +88,48 @@ class DeliveryOrderController extends Controller
     public function cancel(Request $request, DeliveryOrder $order)
     {
         if ($order->vendor_id !== $request->user()->id) {
-            return response()->json(['message' => 'Unauthorized.'], 403);
+            return response()->json(['message' => 'غير مصرح.'], 403);
         }
 
-        if ($order->status !== 'open') {
+        if (!in_array($order->status, ['open', 'assigned', 'active'])) {
             return response()->json([
-                'message' => 'Only open orders can be cancelled.',
+                'message' => 'لا يمكن إلغاء الطلب بعد أن يبدأ السائق التوصيل.',
             ], 422);
         }
 
-        $order->update(['status' => 'cancelled']);
+        DB::transaction(function () use ($order, $request) {
+            // If driver was assigned → refund vendor
+            if (in_array($order->status, ['assigned', 'active'])) {
+                $delivery = $order->delivery;
+                if ($delivery) {
+                    // Refund vendor
+                    $order->vendor->wallet->credit(
+                        amount:      $delivery->total_charged,
+                        description: 'استرداد — إلغاء الطلب من البائع',
+                        reference:   "VENDOR-CANCEL-{$order->id}",
+                    );
+                    // Cancel delivery
+                    $delivery->update(['status' => 'cancelled']);
+                }
+            }
 
-        return response()->json(['message' => 'Order cancelled successfully.']);
+            // Cancel all bids
+            $order->bids()->update(['status' => 'cancelled']);
+
+            // Cancel order
+            $order->update(['status' => 'cancelled']);
+        });
+
+        try {
+            broadcast(new \App\Events\DeliveryStatusChanged(
+                orderId: $order->id,
+                status:  'cancelled',
+                message: 'تم إلغاء الطلب من البائع.',
+            ));
+        } catch (\Exception $e) {}
+
+        return response()->json([
+            'message' => 'تم إلغاء الطلب بنجاح.',
+        ]);
     }
 }
