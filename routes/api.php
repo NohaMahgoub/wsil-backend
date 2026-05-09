@@ -22,7 +22,7 @@ use App\Http\Controllers\Api\Admin\ReviewController as AdminReviewController;
 use App\Http\Controllers\Api\Admin\UserController as AdminUserController;
 use App\Http\Controllers\Api\FcmTokenController;
 use App\Http\Controllers\Api\Admin\DashboardController as AdminDashboardController;
-
+use Illuminate\Http\Request;
 
 // Public routes
 Route::post('/register', [AuthController::class, 'register']);
@@ -31,13 +31,18 @@ Route::post('/login',    [AuthController::class, 'login']);
 //app version
 Route::post('/version/check', [App\Http\Controllers\Api\AppVersionController::class, 'check']);
 
-//bank info
-Route::get('/bank-details', function () {
-    return response()->json([
-        'bank_name'      => config('app.bank_name', 'بنك الخرطوم'),
-        'account_name'   => config('app.account_name', 'وصل للتوصيل'),
-        'account_number' => config('app.account_number', '1234567890'),
-    ]);
+Route::get('/settings', function () {
+    $path = storage_path('app/settings.json');
+    $settings = file_exists($path)
+        ? json_decode(file_get_contents($path), true)
+        : [];
+
+    return response()->json(array_merge([
+        'support_whatsapp' => env('SUPPORT_WHATSAPP', '249900000000'),
+        'bank_name'        => env('BANK_NAME', 'بنك الخرطوم'),
+        'account_name'     => env('ACCOUNT_NAME', 'وصل للتوصيل'),
+        'account_number'   => env('ACCOUNT_NUMBER', '1234567890'),
+    ], $settings));
 });
 
 // Protected routes
@@ -167,4 +172,20 @@ Route::middleware(['auth:sanctum', 'role:admin'])
         // app version 
         Route::put('app-version',  [App\Http\Controllers\Api\Admin\AppVersionController::class, 'update']);
         Route::get('app-version',  [App\Http\Controllers\Api\Admin\AppVersionController::class, 'show']);
+
+        Route::put('settings', function(Request $request) {
+            $settings = [
+                'support_whatsapp' => $request->support_whatsapp,
+                'bank_name'        => $request->bank_name,
+                'account_name'     => $request->account_name,
+                'account_number'   => $request->account_number,
+            ];
+
+            file_put_contents(
+                storage_path('app/settings.json'),
+                json_encode($settings, JSON_UNESCAPED_UNICODE)
+            );
+
+            return response()->json(['message' => 'تم حفظ الإعدادات.']);
+        });
     });

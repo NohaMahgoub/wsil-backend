@@ -555,9 +555,21 @@ const SettingsPage = () => {
     }).catch(() => setLoading(false));
   }, []);
 
+  fetch('/api/settings', {
+    headers: { 'Accept': 'application/json' }
+  }).then(r => r.json()).then(d => {
+    if (d) {
+      setWhatsapp(d.support_whatsapp ?? '249900000000');
+      setBankName(d.bank_name ?? 'بنك الخرطوم');
+      setAccountName(d.account_name ?? 'وصل للتوصيل');
+      setAccountNumber(d.account_number ?? '1234567890');
+    }
+  });
+
   if (loading) return <div style={{ color: C.textSec, padding: 40, textAlign: "center" }}>جاري التحميل...</div>;
 
   const save = () => {
+    // Save version
     fetch('/api/admin/app-version', {
       method: 'PUT',
       headers: {
@@ -573,8 +585,29 @@ const SettingsPage = () => {
         update_message:  message,
         update_url:      'https://play.google.com/store/apps/details?id=com.example.wasil_app',
       }),
+    });
+
+    // Save settings
+    fetch('/api/admin/settings', {
+      method: 'PUT',
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('admin_token')}`,
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+      },
+      body: JSON.stringify({
+        support_whatsapp: whatsapp,
+        bank_name:        bankName,
+        account_name:     accountName,
+        account_number:   accountNumber,
+      }),
     }).then(() => { setSaved(true); setTimeout(() => setSaved(false), 3000); });
   };
+
+  const [whatsapp, setWhatsapp] = useState('249900000000');
+  const [bankName, setBankName] = useState('بنك الخرطوم');
+  const [accountName, setAccountName] = useState('وصل للتوصيل');
+  const [accountNumber, setAccountNumber] = useState('1234567890');
 
   return (
     <div>
@@ -588,6 +621,25 @@ const SettingsPage = () => {
         {[
           { label: 'الإصدار الأدنى المطلوب', value: minVersion, onChange: setMinVersion, hint: 'مثال: 1.0.5' },
           { label: 'أحدث إصدار', value: latestVersion, onChange: setLatestVersion, hint: 'مثال: 1.2.0' },
+        ].map(f => (
+          <div key={f.label} style={{ marginBottom: 16, textAlign: "right" }}>
+            <div style={{ fontSize: 13, color: C.textSec, marginBottom: 6 }}>{f.label}</div>
+            <input
+              value={f.value}
+              onChange={e => f.onChange(e.target.value)}
+              placeholder={f.hint}
+              style={{ width: "100%", padding: "10px 12px", background: C.surfaceHi, border: `1px solid ${C.border}`, borderRadius: 8, color: C.textPri, fontSize: 14, textAlign: "right", boxSizing: "border-box" }}
+            />
+          </div>
+        ))}
+
+        <div style={{ fontSize: 16, fontWeight: 700, color: C.textPri, margin: "20px 0 16px", textAlign: "right" }}>📞 بيانات الدعم والبنك</div>
+
+        {[
+          { label: 'رقم واتساب الدعم', value: whatsapp, onChange: setWhatsapp, hint: '249900000000' },
+          { label: 'اسم البنك', value: bankName, onChange: setBankName, hint: 'بنك الخرطوم' },
+          { label: 'اسم الحساب', value: accountName, onChange: setAccountName, hint: 'وصل للتوصيل' },
+          { label: 'رقم الحساب', value: accountNumber, onChange: setAccountNumber, hint: '1234567890' },
         ].map(f => (
           <div key={f.label} style={{ marginBottom: 16, textAlign: "right" }}>
             <div style={{ fontSize: 13, color: C.textSec, marginBottom: 6 }}>{f.label}</div>
@@ -624,6 +676,7 @@ const SettingsPage = () => {
         </button>
       </div>
     </div>
+    
   );
 };
 
