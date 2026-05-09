@@ -43,13 +43,17 @@ class DeliveryController extends Controller
             $order->update(['status' => 'completed']);
         });
 
-        $notification = new NotificationService();
-        $notification->sendToUser(
-            user:  $delivery->driver,
-            title: '💰 Payment Released!',
-            body:  "Your payment of SAR {$delivery->delivery_price} has been released to your wallet.",
-            data:  ['order_id' => (string) $order->id, 'type' => 'payment_released'],
-        );
+        try {
+            $notification = new NotificationService();
+            $notification->sendToUser(
+                user:  $delivery->driver,
+                title: '💰 تم تحرير المبلغ!',
+                body:  "تم إضافة SDG {$delivery->delivery_price} إلى محفظتك بنجاح.",
+                data:  ['order_id' => (string) $order->id, 'type' => 'payment_released'],
+            );
+        } catch (\Exception $e) {
+            // Silent fail
+        }
                 return response()->json([
             'message' => 'تم تأكيد التسليم. تم تحرير المبلغ للسائق.',
             'amount_released'  => $delivery->delivery_price,

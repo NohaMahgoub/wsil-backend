@@ -43,14 +43,17 @@ class BidController extends Controller
         ]);
 
         //Notify vendor
-        $notification = new NotificationService();
-        $notification->sendToUser(
-            user:  $order->vendor,
-            title: '📦 New Bid Received',
-            body:  "{$request->user()->name} placed a bid of SAR {$request->price} on your order.",
-            data:  ['order_id' => (string) $order->id, 'type' => 'new_bid'],
-        );
-
+        try {
+            $notification = new NotificationService();
+            $notification->sendToUser(
+                user:  $order->vendor,
+                title: '📦 عرض جديد على طلبك',
+                body:  "قدّم {$request->user()->name} عرضاً بسعر SDG {$request->price} على طلبك.",
+                data:  ['order_id' => (string) $order->id, 'type' => 'new_bid'],
+            );
+        } catch (\Exception $e) {
+            // Silent fail
+        }
         return response()->json([
             'message' => 'Bid placed successfully.',
             'bid'     => $bid,

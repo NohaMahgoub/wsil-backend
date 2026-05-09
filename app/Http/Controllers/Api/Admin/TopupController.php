@@ -51,13 +51,17 @@ class TopupController extends Controller
             );
         });
 
-        $notification = new NotificationService();
-        $notification->sendToUser(
-            user:  $topup->vendor,
-            title: '💳 Wallet Topped Up',
-            body:  "SAR {$topup->amount} has been added to your wallet.",
-            data:  ['type' => 'topup_approved'],
-        );
+        try {
+            $notification = new NotificationService();
+            $notification->sendToUser(
+                user:  $topup->vendor,
+                title: '💳 تم شحن محفظتك',
+                body:  "تمت إضافة SDG {$topup->amount} إلى محفظتك بنجاح.",
+                data:  ['type' => 'topup_approved'],
+            );
+        } catch (\Exception $e) {
+            // Silent fail
+        }
 
         return response()->json([
             'message'         => 'تم اعتماد الشحن وإضافة الرصيد للمحفظة.',
@@ -75,7 +79,7 @@ class TopupController extends Controller
 
         if ($topup->status !== 'pending') {
             return response()->json([
-                'message' => 'This request has already been reviewed.',
+                'message' => 'تمت مراجعة هذا الطلب مسبقاً.',
             ], 422);
         }
 
@@ -86,8 +90,21 @@ class TopupController extends Controller
             'rejection_reason' => $request->reason,
         ]);
 
+        // ← Notify vendor of rejection
+        try {
+            $notification = new NotificationService();
+            $notification->sendToUser(
+                user:  $topup->vendor,
+                title: '❌ تم رفض طلب الشحن',
+                body:  "تم رفض طلب شحن محفظتك بمبلغ SDG {$topup->amount}. السبب: {$request->reason}",
+                data:  ['type' => 'topup_rejected'],
+            );
+        } catch (\Exception $e) {
+            // Silent fail
+        }
+
         return response()->json([
-            'message' => 'Top-up request rejected.',
+            'message' => 'تم رفض طلب الشحن.',
         ]);
     }
 

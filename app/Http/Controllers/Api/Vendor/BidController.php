@@ -87,13 +87,17 @@ class BidController extends Controller
                 'status'         => 'in_progress',
             ]);
 
-            $notification = new NotificationService();
-            $notification->sendToUser(
-                user:  $bid->driver,
-                title: '🎉 Your Bid Was Accepted!',
-                body:  "You have been selected for the delivery. Please accept the order.",
-                data:  ['order_id' => (string) $order->id, 'type' => 'bid_accepted'],
-            );
+          try {
+                $notification = new NotificationService();
+                $notification->sendToUser(
+                    user:  $bid->driver,
+                    title: '🎉 تم قبول عرضك!',
+                    body:  'تم اختيارك للتوصيل. يرجى قبول الطلب والبدء بالتوصيل.',
+                    data:  ['order_id' => (string) $order->id, 'type' => 'bid_accepted'],
+                );
+            } catch (\Exception $e) {
+                // Silent fail
+            }
         });
 
         return response()->json([
