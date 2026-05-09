@@ -534,11 +534,16 @@ const SettingsPage = () => {
   const [latestVersion, setLatestVersion] = useState('1.0.0');
   const [forceUpdate, setForceUpdate] = useState(false);
   const [message, setMessage] = useState('يوجد تحديث جديد للتطبيق. يرجى التحديث للاستمرار.');
+  const [whatsapp, setWhatsapp] = useState('249900000000');
+  const [bankName, setBankName] = useState('بنك الخرطوم');
+  const [accountName, setAccountName] = useState('وصل للتوصيل');
+  const [accountNumber, setAccountNumber] = useState('1234567890');
   const [saved, setSaved] = useState(false);
   const [loading, setLoading] = useState(true);
 
-  // Load current version from backend
+  // ← All hooks first, then fetch in useEffect
   useEffect(() => {
+    // Load version
     fetch('/api/admin/app-version', {
       headers: {
         'Authorization': `Bearer ${localStorage.getItem('admin_token')}`,
@@ -551,25 +556,25 @@ const SettingsPage = () => {
         setForceUpdate(d.force_update ?? false);
         setMessage(d.update_message ?? 'يوجد تحديث جديد للتطبيق. يرجى التحديث للاستمرار.');
       }
+    }).catch(() => {});
+
+    // Load settings
+    fetch('/api/settings', {
+      headers: { 'Accept': 'application/json' }
+    }).then(r => r.json()).then(d => {
+      if (d) {
+        setWhatsapp(d.support_whatsapp ?? '249900000000');
+        setBankName(d.bank_name ?? 'بنك الخرطوم');
+        setAccountName(d.account_name ?? 'وصل للتوصيل');
+        setAccountNumber(d.account_number ?? '1234567890');
+      }
       setLoading(false);
     }).catch(() => setLoading(false));
   }, []);
 
-  fetch('/api/settings', {
-    headers: { 'Accept': 'application/json' }
-  }).then(r => r.json()).then(d => {
-    if (d) {
-      setWhatsapp(d.support_whatsapp ?? '249900000000');
-      setBankName(d.bank_name ?? 'بنك الخرطوم');
-      setAccountName(d.account_name ?? 'وصل للتوصيل');
-      setAccountNumber(d.account_number ?? '1234567890');
-    }
-  });
-
   if (loading) return <div style={{ color: C.textSec, padding: 40, textAlign: "center" }}>جاري التحميل...</div>;
 
   const save = () => {
-    // Save version
     fetch('/api/admin/app-version', {
       method: 'PUT',
       headers: {
@@ -587,7 +592,6 @@ const SettingsPage = () => {
       }),
     });
 
-    // Save settings
     fetch('/api/admin/settings', {
       method: 'PUT',
       headers: {
@@ -604,11 +608,6 @@ const SettingsPage = () => {
     }).then(() => { setSaved(true); setTimeout(() => setSaved(false), 3000); });
   };
 
-  const [whatsapp, setWhatsapp] = useState('249900000000');
-  const [bankName, setBankName] = useState('بنك الخرطوم');
-  const [accountName, setAccountName] = useState('وصل للتوصيل');
-  const [accountNumber, setAccountNumber] = useState('1234567890');
-
   return (
     <div>
       <div style={{ marginBottom: 28 }}>
@@ -616,6 +615,7 @@ const SettingsPage = () => {
         <div style={{ fontSize: 14, color: C.textSec, marginTop: 4 }}>إدارة إصدارات التطبيق والتحديثات الإجبارية</div>
       </div>
       <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, padding: "24px", maxWidth: 500 }}>
+
         <div style={{ fontSize: 16, fontWeight: 700, color: C.textPri, marginBottom: 20, textAlign: "right" }}>🔄 إعدادات الإصدار — Android</div>
 
         {[
@@ -624,12 +624,8 @@ const SettingsPage = () => {
         ].map(f => (
           <div key={f.label} style={{ marginBottom: 16, textAlign: "right" }}>
             <div style={{ fontSize: 13, color: C.textSec, marginBottom: 6 }}>{f.label}</div>
-            <input
-              value={f.value}
-              onChange={e => f.onChange(e.target.value)}
-              placeholder={f.hint}
-              style={{ width: "100%", padding: "10px 12px", background: C.surfaceHi, border: `1px solid ${C.border}`, borderRadius: 8, color: C.textPri, fontSize: 14, textAlign: "right", boxSizing: "border-box" }}
-            />
+            <input value={f.value} onChange={e => f.onChange(e.target.value)} placeholder={f.hint}
+              style={{ width: "100%", padding: "10px 12px", background: C.surfaceHi, border: `1px solid ${C.border}`, borderRadius: 8, color: C.textPri, fontSize: 14, textAlign: "right", boxSizing: "border-box" }} />
           </div>
         ))}
 
@@ -643,30 +639,21 @@ const SettingsPage = () => {
         ].map(f => (
           <div key={f.label} style={{ marginBottom: 16, textAlign: "right" }}>
             <div style={{ fontSize: 13, color: C.textSec, marginBottom: 6 }}>{f.label}</div>
-            <input
-              value={f.value}
-              onChange={e => f.onChange(e.target.value)}
-              placeholder={f.hint}
-              style={{ width: "100%", padding: "10px 12px", background: C.surfaceHi, border: `1px solid ${C.border}`, borderRadius: 8, color: C.textPri, fontSize: 14, textAlign: "right", boxSizing: "border-box" }}
-            />
+            <input value={f.value} onChange={e => f.onChange(e.target.value)} placeholder={f.hint}
+              style={{ width: "100%", padding: "10px 12px", background: C.surfaceHi, border: `1px solid ${C.border}`, borderRadius: 8, color: C.textPri, fontSize: 14, textAlign: "right", boxSizing: "border-box" }} />
           </div>
         ))}
 
         <div style={{ marginBottom: 16, textAlign: "right" }}>
           <div style={{ fontSize: 13, color: C.textSec, marginBottom: 6 }}>رسالة التحديث</div>
-          <textarea
-            value={message}
-            onChange={e => setMessage(e.target.value)}
-            style={{ width: "100%", padding: "10px 12px", background: C.surfaceHi, border: `1px solid ${C.border}`, borderRadius: 8, color: C.textPri, fontSize: 14, textAlign: "right", direction: "rtl", resize: "none", minHeight: 80, boxSizing: "border-box" }}
-          />
+          <textarea value={message} onChange={e => setMessage(e.target.value)}
+            style={{ width: "100%", padding: "10px 12px", background: C.surfaceHi, border: `1px solid ${C.border}`, borderRadius: 8, color: C.textPri, fontSize: 14, textAlign: "right", direction: "rtl", resize: "none", minHeight: 80, boxSizing: "border-box" }} />
         </div>
 
         <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 20, justifyContent: "flex-end" }}>
           <div style={{ fontSize: 13, color: C.textSec }}>تحديث إجباري</div>
-          <div
-            onClick={() => setForceUpdate(!forceUpdate)}
-            style={{ width: 44, height: 24, borderRadius: 12, background: forceUpdate ? C.primary : C.border, cursor: "pointer", position: "relative", transition: "background 0.2s" }}
-          >
+          <div onClick={() => setForceUpdate(!forceUpdate)}
+            style={{ width: 44, height: 24, borderRadius: 12, background: forceUpdate ? C.primary : C.border, cursor: "pointer", position: "relative", transition: "background 0.2s" }}>
             <div style={{ width: 20, height: 20, borderRadius: "50%", background: "white", position: "absolute", top: 2, left: forceUpdate ? 22 : 2, transition: "left 0.2s" }} />
           </div>
         </div>
@@ -676,7 +663,6 @@ const SettingsPage = () => {
         </button>
       </div>
     </div>
-    
   );
 };
 
