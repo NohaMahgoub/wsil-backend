@@ -31,18 +31,23 @@ Route::post('/login',    [AuthController::class, 'login']);
 //app version
 Route::post('/version/check', [App\Http\Controllers\Api\AppVersionController::class, 'check']);
 
+// Settings
 Route::get('/settings', function () {
-    $path = storage_path('app/settings.json');
-    $settings = file_exists($path)
-        ? json_decode(file_get_contents($path), true)
-        : [];
+    return response()->json([
+        'support_whatsapp' => \App\Models\AppSetting::get('support_whatsapp', '249912414288'),
+        'bank_name'        => \App\Models\AppSetting::get('bank_name', 'بنك الخرطوم'),
+        'account_name'     => \App\Models\AppSetting::get('account_name', 'نهى احمد'),
+        'account_number'   => \App\Models\AppSetting::get('account_number', '8389213'),
+    ]);
+});
 
-    return response()->json(array_merge([
-        'support_whatsapp' => env('SUPPORT_WHATSAPP', '249900000000'),
-        'bank_name'        => env('BANK_NAME', 'بنك الخرطوم'),
-        'account_name'     => env('ACCOUNT_NAME', 'وصل للتوصيل'),
-        'account_number'   => env('ACCOUNT_NUMBER', '1234567890'),
-    ], $settings));
+// Terms
+Route::get('/terms', function () {
+    return response()->json([
+        'vendor_terms'  => \App\Models\AppSetting::get('vendor_terms', ''),
+        'driver_terms'  => \App\Models\AppSetting::get('driver_terms', ''),
+        'terms_version' => \App\Models\AppSetting::get('terms_version', '1.0'),
+    ]);
 });
 
 // Protected routes
@@ -173,19 +178,52 @@ Route::middleware(['auth:sanctum', 'role:admin'])
         Route::put('app-version',  [App\Http\Controllers\Api\Admin\AppVersionController::class, 'update']);
         Route::get('app-version',  [App\Http\Controllers\Api\Admin\AppVersionController::class, 'show']);
 
-        Route::put('settings', function(Request $request) {
-            $settings = [
-                'support_whatsapp' => $request->support_whatsapp,
-                'bank_name'        => $request->bank_name,
-                'account_name'     => $request->account_name,
-                'account_number'   => $request->account_number,
+        // Save settings
+        Route::put('settings', function (Request $request) {
+            $fields = [
+                'support_whatsapp',
+                'bank_name',
+                'account_name',
+                'account_number',
             ];
-
-            file_put_contents(
-                storage_path('app/settings.json'),
-                json_encode($settings, JSON_UNESCAPED_UNICODE)
-            );
-
+            foreach ($fields as $field) {
+                if ($request->has($field)) {
+                    \App\Models\AppSetting::set($field, $request->$field);
+                }
+            }
             return response()->json(['message' => 'تم حفظ الإعدادات.']);
+        });
+
+        // Save terms
+        Route::put('terms', function (\Illuminate\Http\Request $request) {
+            \App\Models\AppSetting::set('vendor_terms', $request->vendor_terms);
+            \App\Models\AppSetting::set('driver_terms', $request->driver_terms);
+
+            // Bump version to force users to re-agree
+            $current = \App\Models\AppSetting::get('terms_version', '1.0');
+            $parts   = explode('.', $current);
+            $parts[1] = (int)($parts[1] ?? 0) + 1;
+            \App\Models\AppSetting::set('terms_version', implode('.', $parts));
+
+            return response()->json(['message' => 'تم حفظ الشروط والأحكام.']);
+        });
+
+        // Get terms (admin)
+        Route::get('terms', function () {
+            return response()->json([
+                'vendor_terms'  => \App\Models\AppSetting::get('vendor_terms', ''),
+                'driver_terms'  => \App\Models\AppSetting::get('driver_terms', ''),
+                'terms_version' => \App\Models\AppSetting::get('terms_version', '1.0'),
+            ]);
+        });
+
+        // Get settings (admin)
+        Route::get('settings', function () {
+            return response()->json([
+                'support_whatsapp' => \App\Models\AppSetting::get('support_whatsapp', '249912414288'),
+                'bank_name'        => \App\Models\AppSetting::get('bank_name', 'بنك الخرطوم'),
+                'account_name'     => \App\Models\AppSetting::get('account_name', 'نهى احمد'),
+                'account_number'   => \App\Models\AppSetting::get('account_number', '8389213'),
+            ]);
         });
     });

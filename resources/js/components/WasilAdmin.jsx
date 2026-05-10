@@ -666,6 +666,180 @@ const SettingsPage = () => {
   );
 };
 
+const TermsPage = () => {
+  const C = useTheme();
+  const [vendorTerms, setVendorTerms] = useState('');
+  const [driverTerms, setDriverTerms] = useState('');
+  const [saved, setSaved] = useState(false);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetch('/api/admin/terms', {
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('admin_token')}`,
+        'Accept': 'application/json',
+      }
+    }).then(r => r.json()).then(d => {
+      setVendorTerms(d.vendor_terms ?? '');
+      setDriverTerms(d.driver_terms ?? '');
+      setLoading(false);
+    }).catch(() => setLoading(false));
+  }, []);
+
+  const save = () => {
+    fetch('/api/admin/terms', {
+      method: 'PUT',
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('admin_token')}`,
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+      },
+      body: JSON.stringify({
+        vendor_terms: vendorTerms,
+        driver_terms: driverTerms,
+      }),
+    }).then(() => {
+      setSaved(true);
+      setTimeout(() => setSaved(false), 3000);
+    });
+  };
+
+  if (loading) return (
+    <div style={{ color: C.textSec, padding: 40, textAlign: "center" }}>
+      جاري التحميل...
+    </div>
+  );
+
+  return (
+    <div>
+      <div style={{ marginBottom: 28 }}>
+        <div style={{ fontSize: 24, fontWeight: 800, color: C.textPri }}>
+          الشروط والسياسات
+        </div>
+        <div style={{ fontSize: 14, color: C.textSec, marginTop: 4 }}>
+          إدارة شروط الاستخدام لكل من البائعين والسائقين
+        </div>
+      </div>
+
+      {/* Warning */}
+      <div style={{
+        background: C.amberBg, border: `1px solid ${C.amber}`,
+        borderRadius: 10, padding: "12px 16px", marginBottom: 24,
+        display: "flex", alignItems: "center", gap: 10, textAlign: "right"
+      }}>
+        <span style={{ fontSize: 20 }}>⚠️</span>
+        <div style={{ fontSize: 13, color: C.amber }}>
+          عند حفظ الشروط، سيُطلب من جميع المستخدمين الموافقة عليها مجدداً عند تسجيل الدخول.
+        </div>
+      </div>
+
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
+
+        {/* Vendor Terms */}
+        <div style={{
+          background: C.surface, border: `1px solid ${C.border}`,
+          borderRadius: 14, padding: 24,
+        }}>
+          <div style={{
+            display: "flex", alignItems: "center", gap: 10,
+            marginBottom: 16, justifyContent: "flex-end"
+          }}>
+            <div>
+              <div style={{ fontSize: 16, fontWeight: 700, color: C.textPri, textAlign: "right" }}>
+                🏪 شروط البائعين
+              </div>
+              <div style={{ fontSize: 12, color: C.textSec, textAlign: "right" }}>
+                تُعرض على البائع عند تسجيل الدخول
+              </div>
+            </div>
+            <div style={{
+              width: 44, height: 44, borderRadius: 22,
+              background: C.primaryDim, display: "flex",
+              alignItems: "center", justifyContent: "center", fontSize: 22,
+            }}>🏪</div>
+          </div>
+
+          <textarea
+            value={vendorTerms}
+            onChange={e => setVendorTerms(e.target.value)}
+            placeholder="اكتب شروط وأحكام البائعين هنا..."
+            style={{
+              width: "100%", minHeight: 400,
+              padding: "12px", background: C.surfaceHi,
+              border: `1px solid ${C.border}`, borderRadius: 10,
+              color: C.textPri, fontSize: 13, lineHeight: 1.8,
+              textAlign: "right", direction: "rtl",
+              resize: "vertical", boxSizing: "border-box",
+              fontFamily: "'Tajawal', sans-serif",
+            }}
+          />
+          <div style={{ fontSize: 11, color: C.textMuted, marginTop: 6, textAlign: "right" }}>
+            {vendorTerms.length} حرف
+          </div>
+        </div>
+
+        {/* Driver Terms */}
+        <div style={{
+          background: C.surface, border: `1px solid ${C.border}`,
+          borderRadius: 14, padding: 24,
+        }}>
+          <div style={{
+            display: "flex", alignItems: "center", gap: 10,
+            marginBottom: 16, justifyContent: "flex-end"
+          }}>
+            <div>
+              <div style={{ fontSize: 16, fontWeight: 700, color: C.textPri, textAlign: "right" }}>
+                🚗 شروط السائقين
+              </div>
+              <div style={{ fontSize: 12, color: C.textSec, textAlign: "right" }}>
+                تُعرض على السائق عند تسجيل الدخول
+              </div>
+            </div>
+            <div style={{
+              width: 44, height: 44, borderRadius: 22,
+              background: C.orangeDim, display: "flex",
+              alignItems: "center", justifyContent: "center", fontSize: 22,
+            }}>🚗</div>
+          </div>
+
+          <textarea
+            value={driverTerms}
+            onChange={e => setDriverTerms(e.target.value)}
+            placeholder="اكتب شروط وأحكام السائقين هنا..."
+            style={{
+              width: "100%", minHeight: 400,
+              padding: "12px", background: C.surfaceHi,
+              border: `1px solid ${C.border}`, borderRadius: 10,
+              color: C.textPri, fontSize: 13, lineHeight: 1.8,
+              textAlign: "right", direction: "rtl",
+              resize: "vertical", boxSizing: "border-box",
+              fontFamily: "'Tajawal', sans-serif",
+            }}
+          />
+          <div style={{ fontSize: 11, color: C.textMuted, marginTop: 6, textAlign: "right" }}>
+            {driverTerms.length} حرف
+          </div>
+        </div>
+      </div>
+
+      {/* Save Button */}
+      <div style={{ marginTop: 24, display: "flex", justifyContent: "flex-end" }}>
+        <button
+          onClick={save}
+          style={{
+            padding: "12px 40px", background: saved ? C.green : C.primary,
+            border: "none", borderRadius: 10, color: "white",
+            fontWeight: 700, fontSize: 15, cursor: "pointer",
+            transition: "background 0.3s",
+          }}
+        >
+          {saved ? '✅ تم الحفظ! سيُطلب من المستخدمين الموافقة مجدداً' : 'حفظ الشروط والأحكام'}
+        </button>
+      </div>
+    </div>
+  );
+};
+
 const LiveTracker = ({ orderId }) => {
   const C = useTheme();
   const [location, setLocation] = useState(null);
@@ -767,7 +941,8 @@ const NAV = [
   { key: "orders",      label: "الطلبات",      icon: "📦", section: "data" },
   { key: "vendors",     label: "البائعون",     icon: "🏪", section: "data" },
   { key: "drivers",     label: "السائقون",     icon: "🚗", section: "data" },
-  { key: "settings",    label: "الإعدادات",     icon: "⚙️", section: "data" },
+  { key: "settings", label: "الإعدادات", icon: "⚙️", section: "data" },
+  { key: "terms",    label: "الشروط والسياسات", icon: "📄", section: "data" },
 ];
 
 // ── ROOT ─────────────────────────────────────────────────────────
@@ -800,6 +975,7 @@ export default function WasilAdmin({ onLogout }) {
       case "vendors":     return <UsersPage type="vendors" />;
       case "drivers":     return <UsersPage type="drivers" />;
       case "settings":    return <SettingsPage />;
+      case "terms":       return <TermsPage />;
       default:            return <DashboardPage setPage={setPage} />;
     }
   };
