@@ -60,6 +60,7 @@ class ReviewController extends Controller
             'reviewee_role' => 'vendor',
             'rating'        => $request->rating,
             'comment'       => $request->comment,
+            'expires_at'    => now()->addHours(48), 
         ]);
 
         return response()->json([

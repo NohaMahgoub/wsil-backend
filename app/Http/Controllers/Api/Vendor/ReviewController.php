@@ -55,6 +55,7 @@ class ReviewController extends Controller
             'reviewee_role' => 'driver',
             'rating'        => $request->rating,
             'comment'       => $request->comment,
+            'expires_at'    => now()->addHours(48), 
         ]);
 
         // Update driver's average rating
