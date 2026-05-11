@@ -13,21 +13,21 @@ class ReviewController extends Controller
     public function store(Request $request, DeliveryOrder $order)
     {
         if ($order->vendor_id !== $request->user()->id) {
-            return response()->json(['message' => 'Unauthorized.'], 403);
+            return response()->json(['message' => 'غير مصرح.'], 403);
         }
 
         $delivery = $order->delivery;
 
-        if (! $delivery || $delivery->status !== 'completed') {
+        if (!$delivery || $delivery->status !== 'completed') {
             return response()->json([
-                'message' => 'You can only review a completed delivery.',
+                'message' => 'يمكنك التقييم بعد اكتمال التوصيل فقط.',
             ], 422);
         }
 
         // Check 48hr window
         if (now()->isAfter($delivery->confirmed_at->addHours(48))) {
             return response()->json([
-                'message' => 'Review window has expired. You had 48 hours to leave a review.',
+                'message' => 'انتهت مدة التقييم. كان لديك 48 ساعة لإرسال التقييم.',
             ], 422);
         }
 
@@ -38,9 +38,9 @@ class ReviewController extends Controller
 
         if ($existing) {
             return response()->json([
-                'message' => 'You have already reviewed this delivery.',
+                'message' => 'لقد قمت بتقييم هذا التوصيل مسبقاً.',
             ], 422);
-        }
+        }  // ← missing closing brace was here
 
         $request->validate([
             'rating'  => 'required|integer|min:1|max:5',
@@ -48,19 +48,20 @@ class ReviewController extends Controller
         ]);
 
         $review = Review::create([
-            'delivery_id'  => $delivery->id,
-            'reviewer_id'  => $request->user()->id,
-            'reviewee_id'  => $delivery->driver_id,
-            'rating'       => $request->rating,
-            'comment'      => $request->comment,
-            'expires_at'   => $delivery->confirmed_at->addHours(48),
+            'delivery_id'   => $delivery->id,
+            'reviewer_id'   => $request->user()->id,
+            'reviewer_role' => 'vendor',
+            'reviewee_id'   => $delivery->driver_id,
+            'reviewee_role' => 'driver',
+            'rating'        => $request->rating,
+            'comment'       => $request->comment,
         ]);
 
         // Update driver's average rating
         $this->updateDriverRating($delivery->driver_id);
 
         return response()->json([
-            'message' => 'Review submitted successfully.',
+            'message' => 'تم إرسال التقييم بنجاح.',
             'review'  => $review,
         ], 201);
     }
@@ -68,13 +69,17 @@ class ReviewController extends Controller
     // Update driver average rating
     private function updateDriverRating(int $driverId): void
     {
-        $avg = Review::where('reviewee_id', $driverId)->avg('rating');
-        $count = Review::where('reviewee_id', $driverId)->count();
+        $avg   = Review::where('reviewee_id', $driverId)
+                    ->where('reviewee_role', 'driver')
+                    ->avg('rating');
+        $count = Review::where('reviewee_id', $driverId)
+                    ->where('reviewee_role', 'driver')
+                    ->count();
 
         $profile = \App\Models\DriverProfile::where('user_id', $driverId)->first();
         if ($profile) {
             $profile->update([
-                'rating'        => round($avg, 2),
+                'rating'        => round($avg ?? 0, 2),
                 'total_reviews' => $count,
             ]);
         }

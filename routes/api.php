@@ -22,6 +22,7 @@ use App\Http\Controllers\Api\Admin\ReviewController as AdminReviewController;
 use App\Http\Controllers\Api\Admin\UserController as AdminUserController;
 use App\Http\Controllers\Api\FcmTokenController;
 use App\Http\Controllers\Api\Admin\DashboardController as AdminDashboardController;
+use App\Http\Controllers\Api\ReviewController;
 use Illuminate\Http\Request;
 
 // Public routes
@@ -49,6 +50,9 @@ Route::get('/terms', function () {
         'terms_version' => \App\Models\AppSetting::get('terms_version', '1.0'),
     ]);
 });
+
+Route::get('/drivers/{driverId}/reviews', [ReviewController::class, 'driverReviews']);
+
 
 // Protected routes
 Route::middleware('auth:sanctum')->group(function () {

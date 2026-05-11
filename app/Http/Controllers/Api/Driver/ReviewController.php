@@ -53,12 +53,13 @@ class ReviewController extends Controller
         ]);
 
         $review = Review::create([
-            'delivery_id'  => $delivery->id,
-            'reviewer_id'  => $request->user()->id,
-            'reviewee_id'  => $delivery->vendor_id,
-            'rating'       => $request->rating,
-            'comment'      => $request->comment,
-            'expires_at'   => $checkTime->addHours(48),
+            'delivery_id'   => $delivery->id,
+            'reviewer_id'   => $request->user()->id,
+            'reviewer_role' => 'driver',
+            'reviewee_id'   => $order->vendor_id,
+            'reviewee_role' => 'vendor',
+            'rating'        => $request->rating,
+            'comment'       => $request->comment,
         ]);
 
         return response()->json([
@@ -71,6 +72,7 @@ class ReviewController extends Controller
     public function received(Request $request)
     {
         $reviews = Review::where('reviewee_id', $request->user()->id)
+            ->where('reviewee_role', 'driver')
             ->with('reviewer:id,name', 'delivery.order')
             ->latest()
             ->paginate(15);
@@ -82,7 +84,20 @@ class ReviewController extends Controller
     public function given(Request $request)
     {
         $reviews = Review::where('reviewer_id', $request->user()->id)
+            ->where('reviewer_role', 'driver')
             ->with('reviewee:id,name', 'delivery.order')
+            ->latest()
+            ->paginate(15);
+
+        return response()->json($reviews);
+    }
+
+    // Driver views all their reviews (index)
+    public function index(Request $request)
+    {
+        $reviews = Review::where('reviewee_id', $request->user()->id)
+            ->where('reviewee_role', 'driver')
+            ->with('reviewer:id,name', 'delivery.order')
             ->latest()
             ->paginate(15);
 
