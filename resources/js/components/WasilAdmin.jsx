@@ -290,7 +290,7 @@ const WithdrawalsPage = () => {
                 <Td><span style={{ fontSize: 15, fontWeight: 800 }}>SDG {r.amount}</span></Td>
                 <Td><span style={{ color: C.textSec, fontSize: 12 }}>{r.bank_name}</span></Td>
                 <Td><span style={{ color: C.textSec, fontSize: 12 }}>{r.account_number}</span></Td>
-                <Td><span style={{ color: C.textSec }}>{r.transfer_reference}</span></Td>
+                <Td><span style={{ color: C.textSec }}>{r.transaction_id}</span></Td>
                 <Td><span style={{ color: C.textSec, fontSize: 12 }}>{new Date(r.created_at).toLocaleDateString()}</span></Td>
                 <Td><Badge label={r.status.charAt(0).toUpperCase()+r.status.slice(1)} type={r.status} /></Td>
                 <Td>
