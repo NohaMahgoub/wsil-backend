@@ -15,6 +15,13 @@ class WithdrawalController extends Controller
             ->latest()
             ->paginate(15);
 
+        $withdrawals->getCollection()->transform(function ($w) {
+            $w->transaction_proof_url = $w->transaction_proof
+                ? asset('storage/' . $w->transaction_proof)
+                : null;
+            return $w;
+        });
+
         return response()->json($withdrawals);
     }
 

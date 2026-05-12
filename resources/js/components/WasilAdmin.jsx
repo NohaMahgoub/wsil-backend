@@ -242,54 +242,318 @@ const TopupsPage = () => {
 
 const WithdrawalsPage = () => {
   const C = useTheme();
+
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
-  useEffect(() => {
-    fetch('/api/admin/withdrawals', { headers: { 'Authorization': `Bearer ${localStorage.getItem('admin_token')}`, 'Accept': 'application/json' } })
-      .then(r => r.json()).then(d => { setItems(d.data || []); setLoading(false); }).catch(() => setLoading(false));
-  }, []);
-  const approve = (id) => fetch(`/api/admin/withdrawals/${id}/approve`, { method: 'POST', headers: { 'Authorization': `Bearer ${localStorage.getItem('admin_token')}`, 'Accept': 'application/json' } })
-    .then(() => setItems(prev => prev.map(r => r.id === id ? { ...r, status: 'approved' } : r)));
-  const reject = (id) => {
-    const reason = prompt('سبب الرفض:'); if (!reason) return;
-    fetch(`/api/admin/withdrawals/${id}/reject`, { method: 'POST', headers: { 'Authorization': `Bearer ${localStorage.getItem('admin_token')}`, 'Content-Type': 'application/json', 'Accept': 'application/json' }, body: JSON.stringify({ reason }) })
-      .then(() => setItems(prev => prev.filter(r => r.id !== id)));
+  const [processingId, setProcessingId] = useState(null);
+
+  const token = localStorage.getItem("admin_token");
+
+  const headers = {
+    Authorization: `Bearer ${token}`,
+    Accept: "application/json",
   };
-  if (loading) return <div style={{ color: C.textSec, padding: 40, textAlign: "center" }}>جاري التحميل...</div>;
+
+  useEffect(() => {
+    let mounted = true;
+
+    const loadWithdrawals = async () => {
+      try {
+        setLoading(true);
+
+        const res = await fetch("/api/admin/withdrawals", {
+          headers,
+        });
+
+        if (!res.ok) {
+          throw new Error("فشل تحميل البيانات");
+        }
+
+        const data = await res.json();
+
+        if (mounted) {
+          setItems(data.data || []);
+        }
+      } catch (err) {
+        console.error(err);
+        alert("حدث خطأ أثناء تحميل طلبات السحب");
+      } finally {
+        if (mounted) {
+          setLoading(false);
+        }
+      }
+    };
+
+    loadWithdrawals();
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  const approve = async (id) => {
+    try {
+      setProcessingId(id);
+
+      const res = await fetch(
+        `/api/admin/withdrawals/${id}/approve`,
+        {
+          method: "POST",
+          headers,
+        }
+      );
+
+      if (!res.ok) {
+        throw new Error("فشل اعتماد الطلب");
+      }
+
+      setItems((prev) =>
+        prev.map((r) =>
+          r.id === id
+            ? { ...r, status: "approved" }
+            : r
+        )
+      );
+    } catch (err) {
+      console.error(err);
+      alert("تعذر اعتماد الطلب");
+    } finally {
+      setProcessingId(null);
+    }
+  };
+
+  const reject = async (id) => {
+    const reason = prompt("سبب الرفض:");
+
+    if (!reason) return;
+
+    try {
+      setProcessingId(id);
+
+      const res = await fetch(
+        `/api/admin/withdrawals/${id}/reject`,
+        {
+          method: "POST",
+          headers: {
+            ...headers,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ reason }),
+        }
+      );
+
+      if (!res.ok) {
+        throw new Error("فشل رفض الطلب");
+      }
+
+      setItems((prev) =>
+        prev.map((r) =>
+          r.id === id
+            ? {
+                ...r,
+                status: "rejected",
+                reject_reason: reason,
+              }
+            : r
+        )
+      );
+    } catch (err) {
+      console.error(err);
+      alert("تعذر رفض الطلب");
+    } finally {
+      setProcessingId(null);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div
+        style={{
+          color: C.textSec,
+          padding: 40,
+          textAlign: "center",
+        }}
+      >
+        جاري التحميل...
+      </div>
+    );
+  }
+
   return (
     <div>
       <div style={{ marginBottom: 28 }}>
-        <div style={{ fontSize: 24, fontWeight: 800, color: C.textPri }}>طلبات السحب</div>
-        <div style={{ fontSize: 14, color: C.textSec, marginTop: 4 }}>مراجعة ومعالجة طلبات سحب السائقين</div>
+        <div
+          style={{
+            fontSize: 24,
+            fontWeight: 800,
+            color: C.textPri,
+          }}
+        >
+          طلبات السحب
+        </div>
+
+        <div
+          style={{
+            fontSize: 14,
+            color: C.textSec,
+            marginTop: 4,
+          }}
+        >
+          مراجعة ومعالجة طلبات سحب السائقين
+        </div>
       </div>
-      <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, padding: "20px" }}>
-        {items.length === 0 && <div style={{ color: C.textSec, textAlign: "center", padding: 40 }}>لا توجد طلبات سحب</div>}
-        <table style={{ width: "100%", borderCollapse: "collapse" }}>
-          <thead><tr>{["الرقم","السائق","المبلغ"," اسم البنك "," اسم الحساب ","رقم الحساب البنكي","التاريخ","الحالة","الإجراءات"].map(h => <Th key={h}>{h}</Th>)}</tr></thead>
-          <tbody>
-            {items.map(r => (
-              <tr key={r.id}>
-                <Td><span style={{ color: C.orange, fontFamily: "monospace", fontWeight: 700 }}>WD-{r.id}</span></Td>
-                <Td><div style={{ fontWeight: 600 }}>{r.driver?.name}</div></Td>
-                <Td><span style={{ fontSize: 15, fontWeight: 800 }}>SDG {r.amount}</span></Td>
-                <Td><span style={{ color: C.textSec, fontSize: 12 }}>{r.bank_name}</span></Td>
-                <Td><span style={{ color: C.textSec, fontSize: 12 }}>{r.account_name}</span></Td>
-                <Td><span style={{ color: C.textSec, fontSize: 12 }}>{r.account_number}</span></Td>
-                <Td><span style={{ color: C.textSec, fontSize: 12 }}>{new Date(r.created_at).toLocaleDateString()}</span></Td>
-                <Td><Badge label={r.status.charAt(0).toUpperCase()+r.status.slice(1)} type={r.status} /></Td>
-                <Td>
-                  {r.status === 'pending'
-                    ? <div style={{ display: "flex", gap: 6 }}>
-                        <ActionBtn label="✓ موافقة" color={C.green} bg={C.greenBg} onClick={() => approve(r.id)} />
-                        <ActionBtn label="✗ رفض" color={C.red} bg={C.redBg} onClick={() => reject(r.id)} />
-                      </div>
-                    : <Badge label={r.status === 'approved' ? 'معتمد' : 'مرفوض'} type={r.status === 'approved' ? 'approved' : 'rejected'} />
-                  }
-                </Td>
+
+      <div
+        style={{
+          background: C.surface,
+          border: `1px solid ${C.border}`,
+          borderRadius: 14,
+          padding: 20,
+          overflowX: "auto",
+        }}
+      >
+        {items.length === 0 ? (
+          <div
+            style={{
+              color: C.textSec,
+              textAlign: "center",
+              padding: 40,
+            }}
+          >
+            لا توجد طلبات سحب
+          </div>
+        ) : (
+          <table
+            style={{
+              width: "100%",
+              borderCollapse: "collapse",
+              minWidth: 1000,
+            }}
+          >
+            <thead>
+              <tr>
+                {[
+                  "الرقم",
+                  "السائق",
+                  "المبلغ",
+                  "اسم البنك",
+                  "اسم الحساب",
+                  "رقم الحساب البنكي",
+                  "التاريخ",
+                  "الحالة",
+                  "الإجراءات",
+                ].map((h) => (
+                  <Th key={h}>{h}</Th>
+                ))}
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+
+            <tbody>
+              {items.map((r) => (
+                <tr key={r.id}>
+                  <Td>
+                    <span
+                      style={{
+                        color: C.orange,
+                        fontFamily: "monospace",
+                        fontWeight: 700,
+                      }}
+                    >
+                      WD-{r.id}
+                    </span>
+                  </Td>
+
+                  <Td>
+                    <div style={{ fontWeight: 600 }}>
+                      {r.driver?.name || "-"}
+                    </div>
+                  </Td>
+
+                  <Td>
+                    <span
+                      style={{
+                        fontSize: 15,
+                        fontWeight: 800,
+                      }}
+                    >
+                      SDG {r.amount}
+                    </span>
+                  </Td>
+
+                  <Td>{r.bank_name}</Td>
+
+                  <Td>{r.account_name}</Td>
+
+                  <Td>{r.account_number}</Td>
+
+                  <Td>
+                    <span
+                      style={{
+                        color: C.textSec,
+                        fontSize: 12,
+                      }}
+                    >
+                      {new Date(
+                        r.created_at
+                      ).toLocaleDateString()}
+                    </span>
+                  </Td>
+
+                  <Td>
+                    <Badge
+                      label={r.status}
+                      type={r.status}
+                    />
+                  </Td>
+
+                  <Td>
+                    {r.status === "pending" ? (
+                      <div
+                        style={{
+                          display: "flex",
+                          gap: 6,
+                        }}
+                      >
+                        <ActionBtn
+                          disabled={processingId === r.id}
+                          label={
+                            processingId === r.id
+                              ? "..."
+                              : "✓ موافقة"
+                          }
+                          color={C.green}
+                          bg={C.greenBg}
+                          onClick={() => approve(r.id)}
+                        />
+
+                        <ActionBtn
+                          disabled={processingId === r.id}
+                          label={
+                            processingId === r.id
+                              ? "..."
+                              : "✗ رفض"
+                          }
+                          color={C.red}
+                          bg={C.redBg}
+                          onClick={() => reject(r.id)}
+                        />
+                      </div>
+                    ) : (
+                      <Badge
+                        label={
+                          r.status === "approved"
+                            ? "معتمد"
+                            : "مرفوض"
+                        }
+                        type={r.status}
+                      />
+                    )}
+                  </Td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
       </div>
     </div>
   );

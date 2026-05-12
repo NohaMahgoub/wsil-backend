@@ -22,31 +22,49 @@ class WithdrawalController extends Controller
     {
         if ($withdrawal->status !== 'pending') {
             return response()->json([
-                'message' => 'تمت مراجعة هذا الطلب مسبقاً.',
+                'message' => 'تمت معالجة هذا الطلب مسبقاً.',
             ], 422);
         }
 
-        DB::transaction(function () use ($withdrawal, $request) {
-            $withdrawal->update([
-                'status'      => 'approved',
-                'reviewed_by' => $request->user()->id,
-                'reviewed_at' => now(),
-            ]);
+        $request->validate([
+            'transaction_id'    => 'required|string',
+            'transaction_proof' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:5120',
+        ], [
+            'transaction_id.required' => 'يرجى إدخال رقم العملية.',
+        ]);
 
-            // Add confirmation transaction so driver sees it
-            $withdrawal->driver->wallet->credit(
-                amount:      0,
-                description: "✅ تم اعتماد سحب #{$withdrawal->id} — تم التحويل البنكي",
-                reference:   "WITHDRAWAL-APPROVED-{$withdrawal->id}",
-            );
+        // Store proof file
+        $proofPath = null;
+        if ($request->hasFile('transaction_proof')) {
+            $proofPath = $request->file('transaction_proof')
+                ->store('withdrawal_proofs', 'public');
+        }
+
+        DB::transaction(function () use ($withdrawal, $request, $proofPath) {
+            $withdrawal->update([
+                'status'            => 'approved',
+                'reviewed_by'       => $request->user()->id,
+                'reviewed_at'       => now(),
+                'transaction_id'    => $request->transaction_id,
+                'transaction_proof' => $proofPath,
+            ]);
         });
 
+        // Notify driver
+        try {
+            $notification = new \App\Services\NotificationService();
+            $notification->sendToUser(
+                user:  $withdrawal->driver,
+                title: '💰 تم تحويل أرباحك!',
+                body:  "تم تحويل SDG {$withdrawal->amount} إلى حسابك. رقم العملية: {$request->transaction_id}",
+                data:  ['type' => 'withdrawal_approved'],
+            );
+        } catch (\Exception $e) {}
+
         return response()->json([
-            'message' => 'تمت الموافقة على السحب. تم تأكيد التحويل البنكي.',
-            'amount'  => $withdrawal->amount,
-            'driver'  => $withdrawal->driver->name,
+            'message' => 'تم اعتماد طلب السحب وإشعار السائق.',
         ]);
-    }   
+    }  
 
     public function reject(Request $request, WithdrawalRequest $withdrawal)
     {

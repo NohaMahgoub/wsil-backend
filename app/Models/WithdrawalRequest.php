@@ -9,7 +9,7 @@ class WithdrawalRequest extends Model
         'driver_id', 'amount', 'bank_name',
         'account_number', 'iban', 'status',
         'reviewed_by', 'reviewed_at', 'rejection_reason',
-        'account_name',
+        'account_name','transaction_id','transaction_proof',
     ];
 
     protected $casts = [
