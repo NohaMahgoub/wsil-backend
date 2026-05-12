@@ -24,12 +24,14 @@ class WithdrawalController extends Controller
         $request->validate([
             'amount'         => 'required|numeric|min:10000',
             'bank_name'      => 'required|string',
+            'account_name'   => 'required|string',   // ← add
             'account_number' => 'required|string',
         ], [
             'amount.required'         => 'يرجى إدخال المبلغ.',
             'amount.numeric'          => 'يجب أن يكون المبلغ رقماً.',
             'amount.min'              => 'الحد الأدنى للسحب هو 10000 SDG.',
             'bank_name.required'      => 'يرجى إدخال اسم البنك.',
+            'account_name.required'   => 'يرجى إدخال اسم صاحب الحساب.',
             'account_number.required' => 'يرجى إدخال رقم الحساب.',
         ]);
 
@@ -67,6 +69,7 @@ class WithdrawalController extends Controller
                 'amount'         => $request->amount,
                 'bank_name'      => $request->bank_name,
                 'account_number' => $request->account_number,
+                'account_name'   => $request->account_name,
                 'status'         => 'pending',
             ]);
         });
