@@ -281,7 +281,7 @@ const WithdrawalsPage = () => {
       <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, padding: "20px" }}>
         {items.length === 0 && <div style={{ color: C.textSec, textAlign: "center", padding: 40 }}>لا توجد طلبات سحب</div>}
         <table style={{ width: "100%", borderCollapse: "collapse" }}>
-          <thead><tr>{["الرقم","السائق","المبلغ"," اسم الحساب ","رقم الحساب البنكي","التاريخ","الحالة","الإجراءات"].map(h => <Th key={h}>{h}</Th>)}</tr></thead>
+          <thead><tr>{["الرقم","السائق","المبلغ"," اسم الحساب ","رقم الحساب البنكي","رقم الحوالة","التاريخ","الحالة","الإجراءات"].map(h => <Th key={h}>{h}</Th>)}</tr></thead>
           <tbody>
             {items.map(r => (
               <tr key={r.id}>
@@ -290,6 +290,7 @@ const WithdrawalsPage = () => {
                 <Td><span style={{ fontSize: 15, fontWeight: 800 }}>SDG {r.amount}</span></Td>
                 <Td><span style={{ color: C.textSec, fontSize: 12 }}>{r.bank_name}</span></Td>
                 <Td><span style={{ color: C.textSec, fontSize: 12 }}>{r.account_number}</span></Td>
+                <Td><span style={{ color: C.textSec }}>{r.transfer_reference}</span></Td>
                 <Td><span style={{ color: C.textSec, fontSize: 12 }}>{new Date(r.created_at).toLocaleDateString()}</span></Td>
                 <Td><Badge label={r.status.charAt(0).toUpperCase()+r.status.slice(1)} type={r.status} /></Td>
                 <Td>
