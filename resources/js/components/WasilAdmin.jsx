@@ -248,8 +248,24 @@ const WithdrawalsPage = () => {
     fetch('/api/admin/withdrawals', { headers: { 'Authorization': `Bearer ${localStorage.getItem('admin_token')}`, 'Accept': 'application/json' } })
       .then(r => r.json()).then(d => { setItems(d.data || []); setLoading(false); }).catch(() => setLoading(false));
   }, []);
-  const approve = (id) => fetch(`/api/admin/withdrawals/${id}/approve`, { method: 'POST', headers: { 'Authorization': `Bearer ${localStorage.getItem('admin_token')}`, 'Accept': 'application/json' } })
-    .then(() => setItems(prev => prev.map(r => r.id === id ? { ...r, status: 'approved' } : r)));
+  const approve = (id) => {
+  const transactionId = prompt('رقم العملية البنكية:');
+    if (!transactionId) return;
+
+    const formData = new FormData();
+    formData.append('transaction_id', transactionId);
+
+    fetch(`/api/admin/withdrawals/${id}/approve`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('admin_token')}`,
+        'Accept': 'application/json',
+      },
+      body: formData,
+    }).then(() => setItems(prev =>
+      prev.map(r => r.id === id ? { ...r, status: 'approved' } : r)
+    ));
+  };
   const reject = (id) => {
     const reason = prompt('سبب الرفض:'); if (!reason) return;
     fetch(`/api/admin/withdrawals/${id}/reject`, { method: 'POST', headers: { 'Authorization': `Bearer ${localStorage.getItem('admin_token')}`, 'Content-Type': 'application/json', 'Accept': 'application/json' }, body: JSON.stringify({ reason }) })
