@@ -242,124 +242,276 @@ const TopupsPage = () => {
 
 const WithdrawalsPage = () => {
   const C = useTheme();
+
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
-  useEffect(() => {
-    fetch('/api/admin/withdrawals', { headers: { 'Authorization': `Bearer ${localStorage.getItem('admin_token')}`, 'Accept': 'application/json' } })
-      .then(r => r.json()).then(d => { setItems(d.data || []); setLoading(false); }).catch(() => setLoading(false));
-  }, []);
+
   const [approving, setApproving] = useState(null);
   const [txId, setTxId] = useState('');
   const [txFile, setTxFile] = useState(null);
 
+  useEffect(() => {
+    fetch('/api/admin/withdrawals', {
+      headers: {
+        Authorization: `Bearer ${localStorage.getItem('admin_token')}`,
+        Accept: 'application/json',
+      },
+    })
+      .then((r) => r.json())
+      .then((d) => {
+        setItems(d.data || []);
+        setLoading(false);
+      })
+      .catch(() => setLoading(false));
+  }, []);
+
   const approve = async (id) => {
     if (!txId) return;
-    
+
     const formData = new FormData();
     formData.append('transaction_id', txId);
-    if (txFile) formData.append('transaction_proof', txFile);
+
+    if (txFile) {
+      formData.append('transaction_proof', txFile);
+    }
 
     await fetch(`/api/admin/withdrawals/${id}/approve`, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${localStorage.getItem('admin_token')}`,
-        'Accept': 'application/json',
+        Authorization: `Bearer ${localStorage.getItem('admin_token')}`,
+        Accept: 'application/json',
       },
       body: formData,
     });
 
-    setItems(prev => prev.map(r =>
-      r.id === id ? { ...r, status: 'approved' } : r));
+    setItems((prev) =>
+      prev.map((r) =>
+        r.id === id
+          ? {
+              ...r,
+              status: 'approved',
+              transaction_id: txId,
+            }
+          : r
+      )
+    );
+
     setApproving(null);
     setTxId('');
     setTxFile(null);
   };
 
-  // In JSX — show modal when approving:
-  {approving && (
-    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)',
-      display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
-      <div style={{ background: C.surface, borderRadius: 16, padding: 24,
-        width: 400, border: `1px solid ${C.border}` }}>
-        <div style={{ fontSize: 16, fontWeight: 700, color: C.textPri,
-          marginBottom: 16, textAlign: 'right' }}>
-          ✅ تأكيد تحويل السحب
-        </div>
-        <div style={{ marginBottom: 12, textAlign: 'right' }}>
-          <div style={{ fontSize: 12, color: C.textSec, marginBottom: 6 }}>
-            رقم العملية البنكية *
-          </div>
-          <input value={txId} onChange={e => setTxId(e.target.value)}
-            placeholder="أدخل رقم العملية"
-            style={{ width: '100%', padding: '10px 12px', background: C.surfaceHi,
-              border: `1px solid ${C.border}`, borderRadius: 8, color: C.textPri,
-              fontSize: 14, textAlign: 'right', boxSizing: 'border-box' }} />
-        </div>
-        <div style={{ marginBottom: 20, textAlign: 'right' }}>
-          <div style={{ fontSize: 12, color: C.textSec, marginBottom: 6 }}>
-            إثبات التحويل (اختياري)
-          </div>
-          <input type="file" accept="image/*,.pdf"
-            onChange={e => setTxFile(e.target.files[0])}
-            style={{ color: C.textSec, fontSize: 13 }} />
-        </div>
-        <div style={{ display: 'flex', gap: 10 }}>
-          <button onClick={() => { setApproving(null); setTxId(''); setTxFile(null); }}
-            style={{ flex: 1, padding: '10px', background: C.surfaceHi,
-              border: `1px solid ${C.border}`, borderRadius: 10,
-              color: C.textSec, cursor: 'pointer' }}>
-            إلغاء
-          </button>
-          <button onClick={() => approve(approving)}
-            disabled={!txId}
-            style={{ flex: 2, padding: '10px', background: txId ? C.green : C.border,
-              border: 'none', borderRadius: 10, color: 'white',
-              fontWeight: 700, cursor: txId ? 'pointer' : 'default' }}>
-            تأكيد التحويل
-          </button>
-        </div>
-      </div>
-    </div>
-  )}
   const reject = (id) => {
-    const reason = prompt('سبب الرفض:'); if (!reason) return;
-    fetch(`/api/admin/withdrawals/${id}/reject`, { method: 'POST', headers: { 'Authorization': `Bearer ${localStorage.getItem('admin_token')}`, 'Content-Type': 'application/json', 'Accept': 'application/json' }, body: JSON.stringify({ reason }) })
-      .then(() => setItems(prev => prev.filter(r => r.id !== id)));
+    const reason = prompt('سبب الرفض:');
+
+    if (!reason) return;
+
+    fetch(`/api/admin/withdrawals/${id}/reject`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${localStorage.getItem('admin_token')}`,
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+      },
+      body: JSON.stringify({ reason }),
+    }).then(() =>
+      setItems((prev) => prev.filter((r) => r.id !== id))
+    );
   };
-  if (loading) return <div style={{ color: C.textSec, padding: 40, textAlign: "center" }}>جاري التحميل...</div>;
+
+  if (loading) {
+    return (
+      <div
+        style={{
+          color: C.textSec,
+          padding: 40,
+          textAlign: 'center',
+        }}
+      >
+        جاري التحميل...
+      </div>
+    );
+  }
+
   return (
     <div>
+      {/* Modal */}
+      {approving && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(0,0,0,0.5)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 1000,
+          }}
+        >
+          <div
+            style={{
+              background: C.surface,
+              borderRadius: 16,
+              padding: 24,
+              width: 400,
+              border: `1px solid ${C.border}`,
+            }}
+          >
+            <div
+              style={{
+                fontSize: 16,
+                fontWeight: 700,
+                color: C.textPri,
+                marginBottom: 16,
+                textAlign: 'right',
+              }}
+            >
+              ✅ تأكيد تحويل السحب
+            </div>
+
+            <div style={{ marginBottom: 12, textAlign: 'right' }}>
+              <div
+                style={{
+                  fontSize: 12,
+                  color: C.textSec,
+                  marginBottom: 6,
+                }}
+              >
+                رقم العملية البنكية *
+              </div>
+
+              <input
+                value={txId}
+                onChange={(e) => setTxId(e.target.value)}
+                placeholder="أدخل رقم العملية"
+                style={{
+                  width: '100%',
+                  padding: '10px 12px',
+                  background: C.surfaceHi,
+                  border: `1px solid ${C.border}`,
+                  borderRadius: 8,
+                  color: C.textPri,
+                  fontSize: 14,
+                  textAlign: 'right',
+                  boxSizing: 'border-box',
+                }}
+              />
+            </div>
+
+            <div style={{ marginBottom: 20, textAlign: 'right' }}>
+              <div
+                style={{
+                  fontSize: 12,
+                  color: C.textSec,
+                  marginBottom: 6,
+                }}
+              >
+                إثبات التحويل (اختياري)
+              </div>
+
+              <input
+                type="file"
+                accept="image/*,.pdf"
+                onChange={(e) => setTxFile(e.target.files[0])}
+                style={{
+                  color: C.textSec,
+                  fontSize: 13,
+                }}
+              />
+            </div>
+
+            <div style={{ display: 'flex', gap: 10 }}>
+              <button
+                onClick={() => {
+                  setApproving(null);
+                  setTxId('');
+                  setTxFile(null);
+                }}
+                style={{
+                  flex: 1,
+                  padding: '10px',
+                  background: C.surfaceHi,
+                  border: `1px solid ${C.border}`,
+                  borderRadius: 10,
+                  color: C.textSec,
+                  cursor: 'pointer',
+                }}
+              >
+                إلغاء
+              </button>
+
+              <button
+                onClick={() => approve(approving)}
+                disabled={!txId}
+                style={{
+                  flex: 2,
+                  padding: '10px',
+                  background: txId ? C.green : C.border,
+                  border: 'none',
+                  borderRadius: 10,
+                  color: 'white',
+                  fontWeight: 700,
+                  cursor: txId ? 'pointer' : 'default',
+                }}
+              >
+                تأكيد التحويل
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Header */}
       <div style={{ marginBottom: 28 }}>
-        <div style={{ fontSize: 24, fontWeight: 800, color: C.textPri }}>طلبات السحب</div>
-        <div style={{ fontSize: 14, color: C.textSec, marginTop: 4 }}>مراجعة ومعالجة طلبات سحب السائقين</div>
+        <div
+          style={{
+            fontSize: 24,
+            fontWeight: 800,
+            color: C.textPri,
+          }}
+        >
+          طلبات السحب
+        </div>
+
+        <div
+          style={{
+            fontSize: 14,
+            color: C.textSec,
+            marginTop: 4,
+          }}
+        >
+          مراجعة ومعالجة طلبات سحب السائقين
+        </div>
       </div>
-      <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, padding: "20px" }}>
-        {items.length === 0 && <div style={{ color: C.textSec, textAlign: "center", padding: 40 }}>لا توجد طلبات سحب</div>}
-        <table style={{ width: "100%", borderCollapse: "collapse" }}>
-          <thead><tr>{["الرقم","السائق","المبلغ"," اسم الحساب ","رقم الحساب البنكي","رقم الحوالة","التاريخ","الحالة","الإجراءات"].map(h => <Th key={h}>{h}</Th>)}</tr></thead>
-          <tbody>
-            {items.map(r => (
-              <tr key={r.id}>
-                <Td><span style={{ color: C.orange, fontFamily: "monospace", fontWeight: 700 }}>WD-{r.id}</span></Td>
-                <Td><div style={{ fontWeight: 600 }}>{r.driver?.name}</div></Td>
-                <Td><span style={{ fontSize: 15, fontWeight: 800 }}>SDG {r.amount}</span></Td>
-                <Td><span style={{ color: C.textSec, fontSize: 12 }}>{r.bank_name}</span></Td>
-                <Td><span style={{ color: C.textSec, fontSize: 12 }}>{r.account_number}</span></Td>
-                <Td><span style={{ color: C.textSec }}>{r.transaction_id}</span></Td>
-                <Td><span style={{ color: C.textSec, fontSize: 12 }}>{new Date(r.created_at).toLocaleDateString()}</span></Td>
-                <Td><Badge label={r.status.charAt(0).toUpperCase()+r.status.slice(1)} type={r.status} /></Td>
-                <Td>
-                  {r.status === 'pending'
-                    ? <div style={{ display: "flex", gap: 6 }}>
-                        <ActionBtn label="✓ موافقة" color={C.green} bg={C.greenBg}onClick={() => setApproving(r.id)} />
-                        <ActionBtn label="✗ رفض" color={C.red} bg={C.redBg} onClick={() => reject(r.id)} />
-                      </div>
-                    : <Badge label={r.status === 'approved' ? 'معتمد' : 'مرفوض'} type={r.status === 'approved' ? 'approved' : 'rejected'} />
-                  }
-                </Td>
-              </tr>
-            ))}
-          </tbody>
+
+      {/* Table */}
+      <div
+        style={{
+          background: C.surface,
+          border: `1px solid ${C.border}`,
+          borderRadius: 14,
+          padding: '20px',
+        }}
+      >
+        {items.length === 0 && (
+          <div
+            style={{
+              color: C.textSec,
+              textAlign: 'center',
+              padding: 40,
+            }}
+          >
+            لا توجد طلبات سحب
+          </div>
+        )}
+
+        <table
+          style={{
+            width: '100%',
+            borderCollapse: 'collapse',
+          }}
+        >
+          {/* table content */}
         </table>
       </div>
     </div>
