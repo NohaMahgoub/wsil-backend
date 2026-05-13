@@ -41,6 +41,17 @@ class WithdrawalController extends Controller
         }
 
         DB::transaction(function () use ($withdrawal, $request, $proofPath) {
+            // Update the existing WITHDRAWAL-PENDING transaction reference to APPROVED
+            $withdrawal->driver->wallet->transactions()
+                ->where('reference', 'WITHDRAWAL-PENDING')
+                ->where('amount', $withdrawal->amount)
+                ->latest()
+                ->first()
+                ?->update([
+                    'reference'   => "WITHDRAWAL-APPROVED-{$withdrawal->id}",
+                    'description' => "طلب سحب #{$withdrawal->id} — تم التحويل",
+                ]);
+
             $withdrawal->update([
                 'status'            => 'approved',
                 'reviewed_by'       => $request->user()->id,
