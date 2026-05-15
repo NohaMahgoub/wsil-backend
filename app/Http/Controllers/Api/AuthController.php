@@ -22,7 +22,7 @@ class AuthController extends Controller
             'vehicle_model' => 'nullable|string',
             'vehicle_plate' => 'nullable|string',
             'national_id'   => 'required_if:role,driver|nullable|string',
-            'photo'         => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
+            'photo'         => 'required|image|mimes:jpg,jpeg,png|max:2048',
             ], [
             'name.required'          => 'يرجى إدخال الاسم الكامل.',
             'phone.required'         => 'يرجى إدخال رقم الهاتف.',
@@ -33,6 +33,7 @@ class AuthController extends Controller
             'role.required'          => 'يرجى تحديد نوع الحساب.',
             'vehicle_type.required_if' => 'يرجى اختيار نوع المركبة.',
             'national_id.required_if'  => 'يرجى إدخال الرقم الوطني.',
+            'photo.required'            => 'يرجى إدخال صورة شخصية.',
         ]);
 
         $user = User::create([
