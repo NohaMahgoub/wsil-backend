@@ -22,6 +22,7 @@ class AuthController extends Controller
             'vehicle_model' => 'nullable|string',
             'vehicle_plate' => 'nullable|string',
             'national_id'   => 'required_if:role,driver|nullable|string',
+            'photo'         => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
             ], [
             'name.required'          => 'يرجى إدخال الاسم الكامل.',
             'phone.required'         => 'يرجى إدخال رقم الهاتف.',
@@ -54,11 +55,19 @@ class AuthController extends Controller
         if ($request->role === 'vendor') {
             $user->vendorProfile()->create([]);
         } else {
+            
+            $photoPath = null;
+            if ($request->hasFile('photo')) {
+                $photoPath = $request->file('photo')->store('driver_photos', 'public');
+            }
+
             $user->driverProfile()->create([
                 'vehicle_type'  => $request->vehicle_type,
                 'vehicle_model' => $request->vehicle_model,
                 'vehicle_plate' => $request->vehicle_plate,
+                'photo_path'    => $photoPath,
             ]);
+
         }
 
         $token = $user->createToken('auth_token')->plainTextToken;
