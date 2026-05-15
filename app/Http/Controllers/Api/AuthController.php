@@ -133,9 +133,12 @@ class AuthController extends Controller
 
     public function me(Request $request)
     {
+        $user = $request->user()->load('driverProfile', 'vendorProfile');
+        
         return response()->json([
-            'user' => $request->user(),
-            'role' => $request->user()->getRoleNames()->first(),
+            'user' => $user,
+            'role' => $user->getRoleNames()->first(),
         ]);
+
     }
 }
