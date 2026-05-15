@@ -53,23 +53,30 @@ class AuthController extends Controller
         $user->wallet()->create(['balance' => 0]);
 
         // Create profile — only once ✅
-        if ($request->role === 'vendor') {
-            $user->vendorProfile()->create([]);
-        } else {
+            if ($request->role === 'vendor') {
+                $photoPath = null;
+                if ($request->hasFile('photo')) {
+                    $photoPath = $request->file('photo')->store('vendor_photos', 'public');
+                }
+                $user->vendorProfile()->create([
+                    'photo_path' => $photoPath,
+                ]);
+
+            } else {
             
-            $photoPath = null;
-            if ($request->hasFile('photo')) {
-                $photoPath = $request->file('photo')->store('driver_photos', 'public');
+                $photoPath = null;
+                if ($request->hasFile('photo')) {
+                    $photoPath = $request->file('photo')->store('driver_photos', 'public');
+                }
+
+                $user->driverProfile()->create([
+                    'vehicle_type'  => $request->vehicle_type,
+                    'vehicle_model' => $request->vehicle_model,
+                    'vehicle_plate' => $request->vehicle_plate,
+                    'photo_path'    => $photoPath,
+                ]);
+
             }
-
-            $user->driverProfile()->create([
-                'vehicle_type'  => $request->vehicle_type,
-                'vehicle_model' => $request->vehicle_model,
-                'vehicle_plate' => $request->vehicle_plate,
-                'photo_path'    => $photoPath,
-            ]);
-
-        }
 
         $token = $user->createToken('auth_token')->plainTextToken;
 
@@ -140,5 +147,39 @@ class AuthController extends Controller
             'role' => $user->getRoleNames()->first(),
         ]);
 
+    }
+
+    public function updateProfile(Request $request)
+    {
+        $user = $request->user();
+
+        $request->validate([
+            'name'  => 'sometimes|string|max:255',
+            'photo' => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
+        ]);
+
+        if ($request->filled('name')) {
+            $user->update(['name' => $request->name]);
+        }
+
+        if ($request->hasFile('photo')) {
+            $path = $request->file('photo')->store(
+                $user->role === 'driver' ? 'driver_photos' : 'vendor_photos',
+                'public'
+            );
+
+            if ($user->role === 'driver') {
+                $user->driverProfile()->update(['photo_path' => $path]);
+            } else {
+                $user->vendorProfile()->update(['photo_path' => $path]);
+            }
+        }
+
+        $user->load('driverProfile', 'vendorProfile');
+
+        return response()->json([
+            'message' => 'تم تحديث الملف الشخصي بنجاح',
+            'user'    => $user,
+        ]);
     }
 }

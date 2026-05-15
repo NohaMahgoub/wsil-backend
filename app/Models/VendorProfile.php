@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 class VendorProfile extends Model
 {
     protected $fillable = [
-        'user_id', 'company_name', 'phone', 'is_verified',
+        'user_id', 'company_name', 'phone', 'is_verified','photo_path',
     ];
 
     public function user()
