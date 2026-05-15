@@ -666,7 +666,21 @@ const UsersPage = ({ type }) => {
               {data.map(u => (
                 <tr key={u.id}>
                   <Td><span style={{ color: C.textMuted, fontFamily: "monospace", fontSize: 12 }}>#{u.id}</span></Td>
-                  <Td><div style={{ fontWeight: 600, cursor: "pointer", color: C.primary }} onClick={() => setSelected(u)}>{u.name}</div></Td>
+                  <Td>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                      {type === 'drivers' && u.driver_profile?.photo_path ? (
+                        <img
+                          src={`/storage/${u.driver_profile.photo_path}`}
+                          style={{ width: 32, height: 32, borderRadius: "50%", objectFit: "cover" }}
+                        />
+                      ) : (
+                        <div style={{ width: 32, height: 32, borderRadius: "50%", background: `linear-gradient(135deg, ${C.primary}, ${C.primaryLight})`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 700, color: C.white }}>
+                          {u.name?.charAt(0)}
+                        </div>
+                      )}
+                      <div style={{ fontWeight: 600, cursor: "pointer", color: C.primary }} onClick={() => setSelected(u)}>{u.name}</div>
+                    </div>
+                  </Td>
                   <Td><span style={{ color: C.textSec, fontSize: 12 }}>{u.phone}</span></Td>
                   {type === "vendors"
                     ? <Td>{u.delivery_orders_count ?? 0} طلب</Td>
@@ -716,7 +730,15 @@ const UsersPage = ({ type }) => {
               <div style={{ fontSize: 16, fontWeight: 700, color: C.textPri }}>تفاصيل المستخدم</div>
             </div>
             <div style={{ textAlign: "center", marginBottom: 20 }}>
-              <div style={{ width: 60, height: 60, borderRadius: "50%", background: `linear-gradient(135deg, ${C.primary}, ${C.primaryLight})`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 24, fontWeight: 700, color: C.white, margin: "0 auto 10px" }}>{selected.name?.charAt(0)}</div>
+              {type === 'drivers' && selected.driver_profile?.photo_path ? (
+                <img
+                  src={`/storage/${selected.driver_profile.photo_path}`}
+                  alt={selected.name}
+                  style={{ width: 80, height: 80, borderRadius: "50%", objectFit: "cover", margin: "0 auto 10px", display: "block", border: `3px solid ${C.primary}` }}
+                />
+              ) : (
+                <div style={{ width: 80, height: 80, borderRadius: "50%", background: `linear-gradient(135deg, ${C.primary}, ${C.primaryLight})`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 28, fontWeight: 700, color: C.white, margin: "0 auto 10px" }}>{selected.name?.charAt(0)}</div>
+              )}
               <div style={{ fontSize: 16, fontWeight: 700, color: C.textPri }}>{selected.name}</div>
               <div style={{ fontSize: 13, color: C.textSec }}>{selected.phone}</div>
               {selected.national_id && <div style={{ fontSize: 12, color: C.textSec, marginTop: 4 }}>الرقم الوطني: {selected.national_id}</div>}

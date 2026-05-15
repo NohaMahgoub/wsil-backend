@@ -22,7 +22,7 @@ class AuthController extends Controller
             'vehicle_model' => 'nullable|string',
             'vehicle_plate' => 'nullable|string',
             'national_id'   => 'required_if:role,driver|nullable|string',
-            'photo'         => 'required|image|mimes:jpg,jpeg,png|max:2048',
+            'photo'         => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
             ], [
             'name.required'          => 'يرجى إدخال الاسم الكامل.',
             'phone.required'         => 'يرجى إدخال رقم الهاتف.',
