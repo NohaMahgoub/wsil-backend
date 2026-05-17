@@ -13,6 +13,7 @@ class DriverProfile extends Model
         'national_id',
         'photo_path',
         'rating', 'total_reviews', 'is_verified',
+        'service_fee_percentage',
     ];
 
     public function user()

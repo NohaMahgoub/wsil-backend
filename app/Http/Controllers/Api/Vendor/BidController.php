@@ -43,9 +43,13 @@ class BidController extends Controller
         }
 
 
-        // Calculate service fee (e.g. 10%)
-        $serviceFee   = round($bid->price * 0.10, 2);
-        $totalCharged = $bid->price + $serviceFee;
+        // ── Get vendor service fee ────────────────────────────────
+        $vendorProfile  = $request->user()->vendorProfile;
+        $feePercentage  = $vendorProfile?->service_fee_percentage ?? 5.00;
+        $deliveryPrice  = $bid->price;
+        $serviceFee     = round($deliveryPrice * $feePercentage / 100, 2);
+        $totalCharged   = round($deliveryPrice + $serviceFee, 2);
+
 
         // Check vendor has enough balance
         $wallet = $request->user()->wallet;
@@ -78,13 +82,14 @@ class BidController extends Controller
 
             // Create the delivery record
             Delivery::create([
-                'order_id'       => $order->id,
-                'driver_id'      => $bid->driver_id,
-                'vendor_id'      => $order->vendor_id,
-                'delivery_price' => $bid->price,
-                'service_fee'    => $serviceFee,
-                'total_charged'  => $totalCharged,
-                'status'         => 'in_progress',
+                'order_id'              => $order->id,
+                'driver_id'             => $bid->driver_id,
+                'vendor_id'             => $order->vendor_id,
+                'delivery_price'        => $bid->price,
+                'service_fee'           => $serviceFee,
+                'vendor_fee_percentage' => $feePercentage,  // ← add
+                'total_charged'         => $totalCharged,
+                'status'                => 'in_progress',
             ]);
 
           try {

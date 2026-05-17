@@ -767,6 +767,75 @@ const UsersPage = ({ type }) => {
               <div style={{ fontSize: 24, fontWeight: 800, color: C.primary }}>SDG {selected.wallet?.balance ?? 0}</div>
             </div>
 
+            {/* ── Service Fee ── */}
+              {(() => {
+                const [fee, setFee] = useState(
+                  type === 'vendors'
+                    ? (selected.vendor_profile?.service_fee_percentage ?? 10)
+                    : (selected.driver_profile?.service_fee_percentage ?? 5)
+                );
+                const [feeSaved, setFeeSaved] = useState(false);
+
+                const saveFee = async () => {
+                  await fetch(`/api/admin/users/${selected.id}/fee`, {
+                    method: 'PUT',
+                    headers: {
+                      'Authorization': `Bearer ${localStorage.getItem('admin_token')}`,
+                      'Content-Type': 'application/json',
+                      'Accept': 'application/json',
+                    },
+                    body: JSON.stringify({
+                      service_fee_percentage: fee,
+                      type,
+                    }),
+                  });
+                  setFeeSaved(true);
+                  setTimeout(() => setFeeSaved(false), 2000);
+                };
+
+                return (
+                  <div style={{
+                    background: C.surfaceHi, borderRadius: 10,
+                    padding: "14px", marginBottom: 12,
+                    border: `1px solid ${C.border}`, textAlign: "right"
+                  }}>
+                    <div style={{ fontSize: 11, color: C.textSec, marginBottom: 8 }}>
+                      {type === 'vendors' ? '💳 رسوم الخدمة على البائع' : '💳 رسوم الخدمة على السائق'}
+                    </div>
+                    <div style={{ display: 'flex', gap: 8, alignItems: 'center', justifyContent: 'flex-end' }}>
+                      <button
+                        onClick={saveFee}
+                        style={{
+                          padding: '6px 14px',
+                          background: feeSaved ? C.green : C.primary,
+                          border: 'none', borderRadius: 8,
+                          color: 'white', fontWeight: 700,
+                          cursor: 'pointer', fontSize: 13,
+                          transition: 'background 0.3s',
+                        }}
+                      >
+                        {feeSaved ? '✅ تم' : 'حفظ'}
+                      </button>
+                      <span style={{ color: C.textSec, fontSize: 14 }}>%</span>
+                      <input
+                        type="number"
+                        value={fee}
+                        onChange={e => setFee(e.target.value)}
+                        min="0" max="100" step="0.5"
+                        style={{
+                          width: 70, padding: '6px 10px',
+                          background: C.surface,
+                          border: `1px solid ${C.border}`,
+                          borderRadius: 8, color: C.textPri,
+                          fontSize: 16, textAlign: 'center',
+                          fontWeight: 700,
+                        }}
+                      />
+                    </div>
+                  </div>
+                );
+              })()}
+
             {type === 'drivers' && selected.driver_profile && (
               <div style={{ background: C.surfaceHi, borderRadius: 10, padding: "14px", marginBottom: 12, border: `1px solid ${C.border}`, textAlign: "right" }}>
                 <div style={{ fontSize: 11, color: C.textSec, marginBottom: 8 }}>معلومات المركبة</div>

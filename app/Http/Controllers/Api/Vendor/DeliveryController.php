@@ -12,73 +12,109 @@ use Illuminate\Support\Facades\DB;
 
 class DeliveryController extends Controller
 {
-    // Vendor confirms delivery → release money to driver
+    // Vendor confirms delivery → release money to driver (minus driver fee)
     public function confirm(Request $request, DeliveryOrder $order)
     {
         if ($order->vendor_id !== $request->user()->id) {
-            return response()->json(['message' => 'Unauthorized.'], 403);
+            return response()->json(['message' => 'غير مصرح.'], 403);
         }
 
         $delivery = $order->delivery;
 
-        if (! $delivery || $delivery->status !== 'delivered') {
+        if (!$delivery || $delivery->status !== 'delivered') {
             return response()->json([
-                'message' => 'This delivery has not been marked as delivered yet.',
+                'message' => 'لم يتم تسليم الطلب بعد.',
             ], 422);
         }
 
         DB::transaction(function () use ($order, $delivery) {
-            // Release money to driver wallet
+            // ── Get driver service fee ────────────────────────────
+            $driverProfile    = $delivery->driver->driverProfile;
+            $driverFee        = $driverProfile?->service_fee_percentage ?? 5.00;
+            $deliveryPrice    = $delivery->delivery_price;
+            $driverServiceFee = round($deliveryPrice * $driverFee / 100, 2);
+            $driverEarnings   = round($deliveryPrice - $driverServiceFee, 2);
+
+            // ── Credit driver wallet (minus platform fee) ─────────
             $delivery->driver->wallet->credit(
-                amount:      $delivery->delivery_price,
-                description: "دفعة مقابل التوصيل #{$order->id}",
+                amount:      $driverEarnings,
+                description: "✅ أرباح توصيل WSL-{$order->id} (بعد خصم رسوم {$driverFee}%)",
                 reference:   "DELIVERY-{$delivery->id}",
             );
 
-            // Update statuses
+            // ── Update delivery record ────────────────────────────
             $delivery->update([
-                'status'       => 'completed',
-                'confirmed_at' => now(),
+                'status'               => 'completed',
+                'confirmed_at'         => now(),
+                'driver_fee_percentage'=> $driverFee,
+                'driver_service_fee'   => $driverServiceFee,
+                'driver_earnings'      => $driverEarnings,
             ]);
+
             $order->update(['status' => 'completed']);
+
+            // ── Update driver rating ──────────────────────────────
+            $this->updateDriverRating($delivery->driver_id);
         });
 
+        $delivery->refresh();
+
+        // ── Notify driver ─────────────────────────────────────────
         try {
-            $notification = new NotificationService();
+            $driverEarnings = $delivery->driver_earnings;
+            $notification   = new NotificationService();
             $notification->sendToUser(
                 user:  $delivery->driver,
-                title: '💰 تم تحرير المبلغ!',
-                body:  "تم إضافة SDG {$delivery->delivery_price} إلى محفظتك بنجاح.",
+                title: '💰 تم تحرير أرباحك!',
+                body:  "تم إضافة SDG {$driverEarnings} إلى محفظتك.",
                 data:  ['order_id' => (string) $order->id, 'type' => 'payment_released'],
             );
-        } catch (\Exception $e) {
-            // Silent fail
-        }
-                return response()->json([
-            'message' => 'تم تأكيد التسليم. تم تحرير المبلغ للسائق.',
-            'amount_released'  => $delivery->delivery_price,
+        } catch (\Exception $e) {}
+
+        return response()->json([
+            'message'          => 'تم تأكيد التسليم. تم تحرير الأرباح للسائق.',
+            'driver_earnings'  => $delivery->driver_earnings,
+            'driver_service_fee' => $delivery->driver_service_fee,
         ]);
+    }
+
+    // ── Update driver average rating ──────────────────────────────
+    private function updateDriverRating(int $driverId): void
+    {
+        $avg   = \App\Models\Review::where('reviewee_id', $driverId)
+                    ->where('reviewee_role', 'driver')
+                    ->avg('rating');
+        $count = \App\Models\Review::where('reviewee_id', $driverId)
+                    ->where('reviewee_role', 'driver')
+                    ->count();
+
+        $profile = \App\Models\DriverProfile::where('user_id', $driverId)->first();
+        if ($profile) {
+            $profile->update([
+                'rating'        => round($avg ?? 0, 2),
+                'total_reviews' => $count,
+            ]);
+        }
     }
 
     // Vendor raises a dispute
     public function dispute(Request $request, DeliveryOrder $order)
     {
         if ($order->vendor_id !== $request->user()->id) {
-            return response()->json(['message' => 'Unauthorized.'], 403);
+            return response()->json(['message' => 'غير مصرح.'], 403);
         }
 
         $delivery = $order->delivery;
 
-        if (! $delivery || $delivery->status !== 'delivered') {
+        if (!$delivery || $delivery->status !== 'delivered') {
             return response()->json([
-                'message' => 'You can only dispute a delivered order.',
+                'message' => 'يمكنك رفع نزاع فقط بعد تسليم الطلب.',
             ], 422);
         }
 
-        // Check if dispute already exists
         if ($delivery->dispute) {
             return response()->json([
-                'message' => 'A dispute already exists for this delivery.',
+                'message' => 'يوجد نزاع مسبق لهذا التوصيل.',
             ], 422);
         }
 
@@ -87,7 +123,6 @@ class DeliveryController extends Controller
         ]);
 
         DB::transaction(function () use ($order, $delivery, $request) {
-            // Create dispute
             Dispute::create([
                 'delivery_id' => $delivery->id,
                 'raised_by'   => $request->user()->id,
@@ -95,13 +130,12 @@ class DeliveryController extends Controller
                 'status'      => 'open',
             ]);
 
-            // Freeze the delivery
             $delivery->update(['status' => 'disputed']);
             $order->update(['status' => 'disputed']);
         });
 
         return response()->json([
-            'message' => 'Dispute raised. Admin will review and resolve it.',
+            'message' => 'تم رفع النزاع. سيقوم المسؤول بمراجعته.',
         ]);
     }
 
@@ -109,13 +143,13 @@ class DeliveryController extends Controller
     public function track(Request $request, DeliveryOrder $order)
     {
         if ($order->vendor_id !== $request->user()->id) {
-            return response()->json(['message' => 'Unauthorized.'], 403);
+            return response()->json(['message' => 'غير مصرح.'], 403);
         }
 
         $delivery = $order->delivery;
 
-        if (! $delivery) {
-            return response()->json(['message' => 'No active delivery found.'], 404);
+        if (!$delivery) {
+            return response()->json(['message' => 'لا يوجد توصيل نشط.'], 404);
         }
 
         return response()->json([
@@ -149,11 +183,10 @@ class DeliveryController extends Controller
             // Refund vendor
             $request->user()->wallet->credit(
                 amount:      $delivery->total_charged,
-                description: "استرجاع مبلغ الطلب #{$order->id} — إلغاء التوصيل",
+                description: "↩ استرجاع مبلغ الطلب WSL-{$order->id}",
                 reference:   "CANCEL-{$order->id}",
             );
 
-            // Log cancellation
             DeliveryStatusLog::create([
                 'delivery_id' => $delivery->id,
                 'status'      => 'cancelled',
@@ -161,7 +194,6 @@ class DeliveryController extends Controller
                 'notes'       => 'البائع ألغى التوصيل قبل تحرك السائق',
             ]);
 
-            // Reset order to open
             $order->update(['status' => 'open']);
             $delivery->update(['status' => 'cancelled']);
         });
@@ -169,5 +201,5 @@ class DeliveryController extends Controller
         return response()->json([
             'message' => 'تم إلغاء التوصيل. تم استرجاع المبلغ لمحفظتك.',
         ]);
-}
+    }
 }

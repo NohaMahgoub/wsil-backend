@@ -7,11 +7,12 @@ class Delivery extends Model
 {
     protected $fillable = [
         'order_id', 'driver_id', 'vendor_id',
-        'delivery_price', 'service_fee', 'total_charged',
+        'delivery_price', 'service_fee',
+        'vendor_fee_percentage', 'total_charged',
+        'driver_fee_percentage', 'driver_service_fee', 'driver_earnings',
         'driver_lat', 'driver_lng', 'status',
         'delivered_at', 'confirmed_at', 'auto_release_at',
-        'picking_up_at',
-        'in_transit_at',
+        'picking_up_at', 'in_transit_at',
     ];
 
     protected $casts = [

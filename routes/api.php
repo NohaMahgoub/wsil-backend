@@ -231,4 +231,26 @@ Route::middleware(['auth:sanctum', 'role:admin'])
                 'account_number'   => \App\Models\AppSetting::get('account_number', '8389213'),
             ]);
         });
+
+        // Update user service fee
+        Route::put('users/{user}/fee', function (Request $request, \App\Models\User $user) {
+            $request->validate([
+                'service_fee_percentage' => 'required|numeric|min:0|max:100',
+                'type'                   => 'required|in:vendors,drivers',
+            ]);
+
+            if ($request->type === 'vendors') {
+                \App\Models\VendorProfile::updateOrCreate(
+                    ['user_id' => $user->id],
+                    ['service_fee_percentage' => $request->service_fee_percentage]
+                );
+            } else {
+                \App\Models\DriverProfile::updateOrCreate(
+                    ['user_id' => $user->id],
+                    ['service_fee_percentage' => $request->service_fee_percentage]
+                );
+            }
+
+            return response()->json(['message' => 'تم تحديث رسوم الخدمة.']);
+        });
     });
