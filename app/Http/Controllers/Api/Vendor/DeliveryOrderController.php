@@ -79,6 +79,7 @@ class DeliveryOrderController extends Controller
             'delivery.driver:id,name,phone',
             'delivery.driver.driverProfile',
             'delivery.statusLogs.changedBy:id,name',
+            'vendor.vendorProfile:user_id,service_fee_percentage'
         ]);
 
         return response()->json($order);
