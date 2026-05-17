@@ -61,7 +61,7 @@ class BidController extends Controller
             ], 422);
         }
 
-        DB::transaction(function () use ($order, $bid, $request, $serviceFee, $totalCharged, $wallet) {
+        DB::transaction(function () use ($order, $bid, $request, $serviceFee, $totalCharged, $wallet, $feePercentage) {
             // Debit vendor wallet (escrow)
             $wallet->debit(
                 amount:      $totalCharged,
