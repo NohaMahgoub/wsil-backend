@@ -38,7 +38,7 @@ class DeliveryController extends Controller
             // ── Credit driver wallet (minus platform fee) ─────────
             $delivery->driver->wallet->credit(
                 amount:      $driverEarnings,
-                description: "✅ أرباح توصيل WSL-{$order->id} (بعد خصم رسوم {$driverFee}%)",
+                description: "✅ أرباح توصيل WSL-{$order->id}",
                 reference:   "DELIVERY-{$delivery->id}",
             );
 
