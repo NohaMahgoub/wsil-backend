@@ -618,6 +618,72 @@ const DisputesPage = () => {
 };
 
 // ── USERS PAGE (Vendors + Drivers) ───────────────────────────────
+// ── Service Fee Editor Component ──────────────────────────────────
+const ServiceFeeEditor = ({ userId, type, initialFee, C }) => {
+  const [fee, setFee] = useState(initialFee);
+  const [feeSaved, setFeeSaved] = useState(false);
+
+  const saveFee = async () => {
+    await fetch(`/api/admin/users/${userId}/fee`, {
+      method: 'PUT',
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('admin_token')}`,
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+      },
+      body: JSON.stringify({
+        service_fee_percentage: fee,
+        type,
+      }),
+    });
+    setFeeSaved(true);
+    setTimeout(() => setFeeSaved(false), 2000);
+  };
+
+  return (
+    <div style={{
+      background: C.surfaceHi, borderRadius: 10,
+      padding: "14px", marginBottom: 12,
+      border: `1px solid ${C.border}`, textAlign: "right"
+    }}>
+      <div style={{ fontSize: 11, color: C.textSec, marginBottom: 8 }}>
+        {type === 'vendors' ? '💳 رسوم الخدمة على البائع' : '💳 رسوم الخدمة على السائق'}
+      </div>
+      <div style={{ display: 'flex', gap: 8, alignItems: 'center', justifyContent: 'flex-end' }}>
+        <button
+          onClick={saveFee}
+          style={{
+            padding: '6px 14px',
+            background: feeSaved ? C.green : C.primary,
+            border: 'none', borderRadius: 8,
+            color: 'white', fontWeight: 700,
+            cursor: 'pointer', fontSize: 13,
+            transition: 'background 0.3s',
+          }}
+        >
+          {feeSaved ? '✅ تم' : 'حفظ'}
+        </button>
+        <span style={{ color: C.textSec, fontSize: 14 }}>%</span>
+        <input
+          type="number"
+          value={fee}
+          onChange={e => setFee(e.target.value)}
+          min="0" max="100" step="0.5"
+          style={{
+            width: 70, padding: '6px 10px',
+            background: C.surface,
+            border: `1px solid ${C.border}`,
+            borderRadius: 8, color: C.textPri,
+            fontSize: 16, textAlign: 'center',
+            fontWeight: 700,
+          }}
+        />
+      </div>
+    </div>
+  );
+};
+
+// ── Users Page ────────────────────────────────────────────────────
 const UsersPage = ({ type }) => {
   const C = useTheme();
   const [data, setData] = useState([]);
@@ -625,34 +691,62 @@ const UsersPage = ({ type }) => {
   const [selected, setSelected] = useState(null);
 
   useEffect(() => {
-    fetch(`/api/admin/${type}`, { headers: { 'Authorization': `Bearer ${localStorage.getItem('admin_token')}`, 'Accept': 'application/json' } })
-      .then(r => r.json()).then(d => { setData(d.data || []); setLoading(false); }).catch(() => setLoading(false));
+    fetch(`/api/admin/${type}`, {
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('admin_token')}`,
+        'Accept': 'application/json'
+      }
+    }).then(r => r.json()).then(d => {
+      setData(d.data || []);
+      setLoading(false);
+    }).catch(() => setLoading(false));
   }, [type]);
 
-  const suspend = (id) => fetch(`/api/admin/users/${id}/suspend`, { method: 'POST', headers: { 'Authorization': `Bearer ${localStorage.getItem('admin_token')}`, 'Accept': 'application/json' } })
-    .then(() => setData(prev => prev.map(u => u.id === id ? { ...u, is_suspended: true } : u)));
+  const suspend = (id) => fetch(`/api/admin/users/${id}/suspend`, {
+    method: 'POST',
+    headers: { 'Authorization': `Bearer ${localStorage.getItem('admin_token')}`, 'Accept': 'application/json' }
+  }).then(() => setData(prev => prev.map(u => u.id === id ? { ...u, is_suspended: true } : u)));
 
-  const restore = (id) => fetch(`/api/admin/users/${id}/restore`, { method: 'POST', headers: { 'Authorization': `Bearer ${localStorage.getItem('admin_token')}`, 'Accept': 'application/json' } })
-    .then(() => setData(prev => prev.map(u => u.id === id ? { ...u, is_suspended: false } : u)));
+  const restore = (id) => fetch(`/api/admin/users/${id}/restore`, {
+    method: 'POST',
+    headers: { 'Authorization': `Bearer ${localStorage.getItem('admin_token')}`, 'Accept': 'application/json' }
+  }).then(() => setData(prev => prev.map(u => u.id === id ? { ...u, is_suspended: false } : u)));
 
-  const approveDriver = (id) => fetch(`/api/admin/drivers/${id}/approve`, { method: 'POST', headers: { 'Authorization': `Bearer ${localStorage.getItem('admin_token')}`, 'Accept': 'application/json' } })
-    .then(() => setData(prev => prev.map(u => u.id === id ? { ...u, approval_status: 'approved' } : u)));
+  const approveDriver = (id) => fetch(`/api/admin/drivers/${id}/approve`, {
+    method: 'POST',
+    headers: { 'Authorization': `Bearer ${localStorage.getItem('admin_token')}`, 'Accept': 'application/json' }
+  }).then(() => setData(prev => prev.map(u => u.id === id ? { ...u, approval_status: 'approved' } : u)));
 
-  const rejectDriver = (id) => fetch(`/api/admin/drivers/${id}/reject`, { method: 'POST', headers: { 'Authorization': `Bearer ${localStorage.getItem('admin_token')}`, 'Accept': 'application/json' } })
-    .then(() => setData(prev => prev.map(u => u.id === id ? { ...u, approval_status: 'rejected' } : u)));
+  const rejectDriver = (id) => fetch(`/api/admin/drivers/${id}/reject`, {
+    method: 'POST',
+    headers: { 'Authorization': `Bearer ${localStorage.getItem('admin_token')}`, 'Accept': 'application/json' }
+  }).then(() => setData(prev => prev.map(u => u.id === id ? { ...u, approval_status: 'rejected' } : u)));
 
-  if (loading) return <div style={{ color: C.textSec, padding: 40, textAlign: "center" }}>جاري التحميل...</div>;
+  if (loading) return (
+    <div style={{ color: C.textSec, padding: 40, textAlign: "center" }}>
+      جاري التحميل...
+    </div>
+  );
+
   const title = type === "vendors" ? "البائعون" : "السائقون";
 
   return (
     <div>
       <div style={{ marginBottom: 28 }}>
         <div style={{ fontSize: 24, fontWeight: 800, color: C.textPri }}>{title}</div>
-        <div style={{ fontSize: 14, color: C.textSec, marginTop: 4 }}>إدارة {title} المسجلين في المنصة</div>
+        <div style={{ fontSize: 14, color: C.textSec, marginTop: 4 }}>
+          إدارة {title} المسجلين في المنصة
+        </div>
       </div>
+
       <div style={{ display: "grid", gridTemplateColumns: selected ? "1fr 320px" : "1fr", gap: 20 }}>
+        {/* ── Table ── */}
         <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, padding: "20px" }}>
-          {data.length === 0 && <div style={{ color: C.textSec, textAlign: "center", padding: 40 }}>لا يوجد {title}</div>}
+          {data.length === 0 && (
+            <div style={{ color: C.textSec, textAlign: "center", padding: 40 }}>
+              لا يوجد {title}
+            </div>
+          )}
           <table style={{ width: "100%", borderCollapse: "collapse" }}>
             <thead>
               <tr>
@@ -665,7 +759,11 @@ const UsersPage = ({ type }) => {
             <tbody>
               {data.map(u => (
                 <tr key={u.id}>
-                  <Td><span style={{ color: C.textMuted, fontFamily: "monospace", fontSize: 12 }}>#{u.id}</span></Td>
+                  <Td>
+                    <span style={{ color: C.textMuted, fontFamily: "monospace", fontSize: 12 }}>
+                      #{u.id}
+                    </span>
+                  </Td>
                   <Td>
                     <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                       {type === 'drivers' && u.driver_profile?.photo_path ? (
@@ -674,11 +772,21 @@ const UsersPage = ({ type }) => {
                           style={{ width: 32, height: 32, borderRadius: "50%", objectFit: "cover" }}
                         />
                       ) : (
-                        <div style={{ width: 32, height: 32, borderRadius: "50%", background: `linear-gradient(135deg, ${C.primary}, ${C.primaryLight})`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 700, color: C.white }}>
+                        <div style={{
+                          width: 32, height: 32, borderRadius: "50%",
+                          background: `linear-gradient(135deg, ${C.primary}, ${C.primaryLight})`,
+                          display: "flex", alignItems: "center", justifyContent: "center",
+                          fontSize: 13, fontWeight: 700, color: C.white
+                        }}>
                           {u.name?.charAt(0)}
                         </div>
                       )}
-                      <div style={{ fontWeight: 600, cursor: "pointer", color: C.primary }} onClick={() => setSelected(u)}>{u.name}</div>
+                      <div
+                        style={{ fontWeight: 600, cursor: "pointer", color: C.primary }}
+                        onClick={() => setSelected(u)}
+                      >
+                        {u.name}
+                      </div>
                     </div>
                   </Td>
                   <Td><span style={{ color: C.textSec, fontSize: 12 }}>{u.phone}</span></Td>
@@ -686,17 +794,32 @@ const UsersPage = ({ type }) => {
                     ? <Td>{u.delivery_orders_count ?? 0} طلب</Td>
                     : <Td><span style={{ color: C.orange }}>★ {u.driver_profile?.rating ?? '—'}</span></Td>
                   }
-                  <Td><span style={{ fontWeight: 700, color: C.primary }}>SDG {u.wallet?.balance ?? 0}</span></Td>
-                  <Td><span style={{ color: C.textSec, fontSize: 12 }}>{new Date(u.created_at).toLocaleDateString()}</span></Td>
-                  <Td><Badge label={u.is_suspended ? "موقوف" : "نشط"} type={u.is_suspended ? "suspended" : "active"} /></Td>
+                  <Td>
+                    <span style={{ fontWeight: 700, color: C.primary }}>
+                      SDG {u.wallet?.balance ?? 0}
+                    </span>
+                  </Td>
+                  <Td>
+                    <span style={{ color: C.textSec, fontSize: 12 }}>
+                      {new Date(u.created_at).toLocaleDateString()}
+                    </span>
+                  </Td>
+                  <Td>
+                    <Badge
+                      label={u.is_suspended ? "موقوف" : "نشط"}
+                      type={u.is_suspended ? "suspended" : "active"}
+                    />
+                  </Td>
 
                   {/* Approval column for drivers only */}
                   {type === "drivers" && (
                     <Td>
                       {u.approval_status === 'pending' ? (
                         <div style={{ display: "flex", gap: 4 }}>
-                          <ActionBtn label="✓ قبول" color={C.green} bg={C.greenBg} onClick={() => approveDriver(u.id)} />
-                          <ActionBtn label="✗ رفض" color={C.red} bg={C.redBg} onClick={() => rejectDriver(u.id)} />
+                          <ActionBtn label="✓ قبول" color={C.green} bg={C.greenBg}
+                            onClick={() => approveDriver(u.id)} />
+                          <ActionBtn label="✗ رفض" color={C.red} bg={C.redBg}
+                            onClick={() => rejectDriver(u.id)} />
                         </div>
                       ) : (
                         <Badge
@@ -709,10 +832,13 @@ const UsersPage = ({ type }) => {
 
                   <Td>
                     <div style={{ display: "flex", gap: 6 }}>
-                      <ActionBtn label="عرض" color={C.blue} bg={C.blueBg} onClick={() => setSelected(u)} />
+                      <ActionBtn label="عرض" color={C.blue} bg={C.blueBg}
+                        onClick={() => setSelected(u)} />
                       {u.is_suspended
-                        ? <ActionBtn label="استعادة" color={C.green} bg={C.greenBg} onClick={() => restore(u.id)} />
-                        : <ActionBtn label="إيقاف" color={C.red} bg={C.redBg} onClick={() => suspend(u.id)} />
+                        ? <ActionBtn label="استعادة" color={C.green} bg={C.greenBg}
+                            onClick={() => restore(u.id)} />
+                        : <ActionBtn label="إيقاف" color={C.red} bg={C.redBg}
+                            onClick={() => suspend(u.id)} />
                       }
                     </div>
                   </Td>
@@ -722,132 +848,134 @@ const UsersPage = ({ type }) => {
           </table>
         </div>
 
-        {/* User Detail Panel */}
+        {/* ── User Detail Panel ── */}
         {selected && (
           <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, padding: "20px" }}>
             <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 20 }}>
-              <button onClick={() => setSelected(null)} style={{ background: "none", border: "none", color: C.textMuted, cursor: "pointer", fontSize: 18 }}>✕</button>
+              <button
+                onClick={() => setSelected(null)}
+                style={{ background: "none", border: "none", color: C.textMuted, cursor: "pointer", fontSize: 18 }}
+              >✕</button>
               <div style={{ fontSize: 16, fontWeight: 700, color: C.textPri }}>تفاصيل المستخدم</div>
             </div>
+
+            {/* Avatar */}
             <div style={{ textAlign: "center", marginBottom: 20 }}>
               {type === 'drivers' && selected.driver_profile?.photo_path ? (
                 <img
                   src={`/storage/${selected.driver_profile.photo_path}`}
                   alt={selected.name}
-                  style={{ width: 80, height: 80, borderRadius: "50%", objectFit: "cover", margin: "0 auto 10px", display: "block", border: `3px solid ${C.primary}` }}
+                  style={{
+                    width: 80, height: 80, borderRadius: "50%",
+                    objectFit: "cover", margin: "0 auto 10px",
+                    display: "block", border: `3px solid ${C.primary}`
+                  }}
                 />
               ) : (
-                <div style={{ width: 80, height: 80, borderRadius: "50%", background: `linear-gradient(135deg, ${C.primary}, ${C.primaryLight})`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 28, fontWeight: 700, color: C.white, margin: "0 auto 10px" }}>{selected.name?.charAt(0)}</div>
+                <div style={{
+                  width: 80, height: 80, borderRadius: "50%",
+                  background: `linear-gradient(135deg, ${C.primary}, ${C.primaryLight})`,
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  fontSize: 28, fontWeight: 700, color: C.white, margin: "0 auto 10px"
+                }}>
+                  {selected.name?.charAt(0)}
+                </div>
               )}
               <div style={{ fontSize: 16, fontWeight: 700, color: C.textPri }}>{selected.name}</div>
               <div style={{ fontSize: 13, color: C.textSec }}>{selected.phone}</div>
-              {selected.national_id && <div style={{ fontSize: 12, color: C.textSec, marginTop: 4 }}>الرقم الوطني: {selected.national_id}</div>}
-              <div style={{ marginTop: 8 }}><Badge label={selected.is_suspended ? "موقوف" : "نشط"} type={selected.is_suspended ? "suspended" : "active"} /></div>
+              {selected.national_id && (
+                <div style={{ fontSize: 12, color: C.textSec, marginTop: 4 }}>
+                  الرقم الوطني: {selected.national_id}
+                </div>
+              )}
+              <div style={{ marginTop: 8 }}>
+                <Badge
+                  label={selected.is_suspended ? "موقوف" : "نشط"}
+                  type={selected.is_suspended ? "suspended" : "active"}
+                />
+              </div>
             </div>
 
-            {/* Driver approval in detail panel */}
+            {/* Driver approval */}
             {type === 'drivers' && (
-              <div style={{ marginBottom: 12, padding: "12px", background: C.surfaceHi, borderRadius: 10, border: `1px solid ${C.border}`, textAlign: "right" }}>
+              <div style={{
+                marginBottom: 12, padding: "12px",
+                background: C.surfaceHi, borderRadius: 10,
+                border: `1px solid ${C.border}`, textAlign: "right"
+              }}>
                 <div style={{ fontSize: 11, color: C.textSec, marginBottom: 8 }}>حالة الاعتماد</div>
                 {selected.approval_status === 'pending' ? (
                   <div style={{ display: "flex", gap: 8 }}>
-                    <button onClick={() => { approveDriver(selected.id); setSelected({ ...selected, approval_status: 'approved' }); }}
-                      style={{ flex: 1, padding: "8px", background: C.greenBg, border: `1px solid ${C.green}`, borderRadius: 8, color: C.green, fontWeight: 700, cursor: "pointer" }}>✓ قبول السائق</button>
-                    <button onClick={() => { rejectDriver(selected.id); setSelected({ ...selected, approval_status: 'rejected' }); }}
-                      style={{ flex: 1, padding: "8px", background: C.redBg, border: `1px solid ${C.red}`, borderRadius: 8, color: C.red, fontWeight: 700, cursor: "pointer" }}>✗ رفض السائق</button>
+                    <button
+                      onClick={() => { approveDriver(selected.id); setSelected({ ...selected, approval_status: 'approved' }); }}
+                      style={{ flex: 1, padding: "8px", background: C.greenBg, border: `1px solid ${C.green}`, borderRadius: 8, color: C.green, fontWeight: 700, cursor: "pointer" }}
+                    >✓ قبول السائق</button>
+                    <button
+                      onClick={() => { rejectDriver(selected.id); setSelected({ ...selected, approval_status: 'rejected' }); }}
+                      style={{ flex: 1, padding: "8px", background: C.redBg, border: `1px solid ${C.red}`, borderRadius: 8, color: C.red, fontWeight: 700, cursor: "pointer" }}
+                    >✗ رفض السائق</button>
                   </div>
                 ) : (
-                  <Badge label={selected.approval_status === 'approved' ? 'معتمد ✅' : 'مرفوض ❌'} type={selected.approval_status === 'approved' ? 'approved' : 'rejected'} />
+                  <Badge
+                    label={selected.approval_status === 'approved' ? 'معتمد ✅' : 'مرفوض ❌'}
+                    type={selected.approval_status === 'approved' ? 'approved' : 'rejected'}
+                  />
                 )}
               </div>
             )}
 
-            <div style={{ background: C.surfaceHi, borderRadius: 10, padding: "14px", marginBottom: 12, border: `1px solid ${C.border}`, textAlign: "right" }}>
+            {/* Wallet balance */}
+            <div style={{
+              background: C.surfaceHi, borderRadius: 10,
+              padding: "14px", marginBottom: 12,
+              border: `1px solid ${C.border}`, textAlign: "right"
+            }}>
               <div style={{ fontSize: 11, color: C.textSec, marginBottom: 4 }}>رصيد المحفظة</div>
-              <div style={{ fontSize: 24, fontWeight: 800, color: C.primary }}>SDG {selected.wallet?.balance ?? 0}</div>
+              <div style={{ fontSize: 24, fontWeight: 800, color: C.primary }}>
+                SDG {selected.wallet?.balance ?? 0}
+              </div>
             </div>
 
-            {/* ── Service Fee ── */}
-              {(() => {
-                const [fee, setFee] = useState(
-                  type === 'vendors'
-                    ? (selected.vendor_profile?.service_fee_percentage ?? 10)
-                    : (selected.driver_profile?.service_fee_percentage ?? 5)
-                );
-                const [feeSaved, setFeeSaved] = useState(false);
+            {/* ── Service Fee Editor ── */}
+            <ServiceFeeEditor
+              userId={selected.id}
+              type={type}
+              initialFee={
+                type === 'vendors'
+                  ? (selected.vendor_profile?.service_fee_percentage ?? 10)
+                  : (selected.driver_profile?.service_fee_percentage ?? 5)
+              }
+              C={C}
+            />
 
-                const saveFee = async () => {
-                  await fetch(`/api/admin/users/${selected.id}/fee`, {
-                    method: 'PUT',
-                    headers: {
-                      'Authorization': `Bearer ${localStorage.getItem('admin_token')}`,
-                      'Content-Type': 'application/json',
-                      'Accept': 'application/json',
-                    },
-                    body: JSON.stringify({
-                      service_fee_percentage: fee,
-                      type,
-                    }),
-                  });
-                  setFeeSaved(true);
-                  setTimeout(() => setFeeSaved(false), 2000);
-                };
-
-                return (
-                  <div style={{
-                    background: C.surfaceHi, borderRadius: 10,
-                    padding: "14px", marginBottom: 12,
-                    border: `1px solid ${C.border}`, textAlign: "right"
-                  }}>
-                    <div style={{ fontSize: 11, color: C.textSec, marginBottom: 8 }}>
-                      {type === 'vendors' ? '💳 رسوم الخدمة على البائع' : '💳 رسوم الخدمة على السائق'}
-                    </div>
-                    <div style={{ display: 'flex', gap: 8, alignItems: 'center', justifyContent: 'flex-end' }}>
-                      <button
-                        onClick={saveFee}
-                        style={{
-                          padding: '6px 14px',
-                          background: feeSaved ? C.green : C.primary,
-                          border: 'none', borderRadius: 8,
-                          color: 'white', fontWeight: 700,
-                          cursor: 'pointer', fontSize: 13,
-                          transition: 'background 0.3s',
-                        }}
-                      >
-                        {feeSaved ? '✅ تم' : 'حفظ'}
-                      </button>
-                      <span style={{ color: C.textSec, fontSize: 14 }}>%</span>
-                      <input
-                        type="number"
-                        value={fee}
-                        onChange={e => setFee(e.target.value)}
-                        min="0" max="100" step="0.5"
-                        style={{
-                          width: 70, padding: '6px 10px',
-                          background: C.surface,
-                          border: `1px solid ${C.border}`,
-                          borderRadius: 8, color: C.textPri,
-                          fontSize: 16, textAlign: 'center',
-                          fontWeight: 700,
-                        }}
-                      />
-                    </div>
-                  </div>
-                );
-              })()}
-
+            {/* Vehicle info for drivers */}
             {type === 'drivers' && selected.driver_profile && (
-              <div style={{ background: C.surfaceHi, borderRadius: 10, padding: "14px", marginBottom: 12, border: `1px solid ${C.border}`, textAlign: "right" }}>
+              <div style={{
+                background: C.surfaceHi, borderRadius: 10,
+                padding: "14px", marginBottom: 12,
+                border: `1px solid ${C.border}`, textAlign: "right"
+              }}>
                 <div style={{ fontSize: 11, color: C.textSec, marginBottom: 8 }}>معلومات المركبة</div>
-                <div style={{ fontSize: 13, color: C.textPri }}>🚗 {selected.driver_profile.vehicle_type ?? '—'}</div>
-                <div style={{ fontSize: 12, color: C.textSec }}>{selected.driver_profile.vehicle_model ?? ''} {selected.driver_profile.vehicle_plate ?? ''}</div>
+                <div style={{ fontSize: 13, color: C.textPri }}>
+                  🚗 {selected.driver_profile.vehicle_type ?? '—'}
+                </div>
+                <div style={{ fontSize: 12, color: C.textSec }}>
+                  {selected.driver_profile.vehicle_model ?? ''} {selected.driver_profile.vehicle_plate ?? ''}
+                </div>
               </div>
             )}
 
+            {/* Suspend / Restore */}
             <div style={{ display: "flex", gap: 8 }}>
               {selected.is_suspended
-                ? <button onClick={() => { restore(selected.id); setSelected({ ...selected, is_suspended: false }); }} style={{ flex: 1, padding: "10px", background: C.greenBg, border: `1px solid ${C.green}`, borderRadius: 10, color: C.green, fontWeight: 700, cursor: "pointer" }}>✓ استعادة الحساب</button>
-                : <button onClick={() => { suspend(selected.id); setSelected({ ...selected, is_suspended: true }); }} style={{ flex: 1, padding: "10px", background: C.redBg, border: `1px solid ${C.red}`, borderRadius: 10, color: C.red, fontWeight: 700, cursor: "pointer" }}>✕ إيقاف الحساب</button>
+                ? <button
+                    onClick={() => { restore(selected.id); setSelected({ ...selected, is_suspended: false }); }}
+                    style={{ flex: 1, padding: "10px", background: C.greenBg, border: `1px solid ${C.green}`, borderRadius: 10, color: C.green, fontWeight: 700, cursor: "pointer" }}
+                  >✓ استعادة الحساب</button>
+                : <button
+                    onClick={() => { suspend(selected.id); setSelected({ ...selected, is_suspended: true }); }}
+                    style={{ flex: 1, padding: "10px", background: C.redBg, border: `1px solid ${C.red}`, borderRadius: 10, color: C.red, fontWeight: 700, cursor: "pointer" }}
+                  >✕ إيقاف الحساب</button>
               }
             </div>
           </div>
@@ -856,7 +984,7 @@ const UsersPage = ({ type }) => {
     </div>
   );
 };
-
+// ── Settings Page ────────────────────────────────────────────────────
 const SettingsPage = () => {
   const C = useTheme();
   const [minVersion, setMinVersion] = useState('1.0.0');
