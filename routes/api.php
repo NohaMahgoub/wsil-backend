@@ -29,6 +29,10 @@ use Illuminate\Http\Request;
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login',    [AuthController::class, 'login']);
 
+// OTP verification
+Route::post('otp/send',   [App\Http\Controllers\Api\OtpController::class, 'send']);
+Route::post('otp/verify', [App\Http\Controllers\Api\OtpController::class, 'verify']);
+
 //app version
 Route::post('/version/check', [App\Http\Controllers\Api\AppVersionController::class, 'check']);
 

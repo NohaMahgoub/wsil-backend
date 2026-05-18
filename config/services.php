@@ -41,5 +41,10 @@ return [
         'server_key'  => env('FIREBASE_SERVER_KEY'),
     ],
 
+    'nabda' => [
+        'api_url' => env('NABDA_API_URL'),
+        'token'   => env('NABDA_TOKEN'),
+    ],
+
 
 ];

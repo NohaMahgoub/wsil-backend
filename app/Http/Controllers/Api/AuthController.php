@@ -35,6 +35,13 @@ class AuthController extends Controller
             'national_id.required_if'  => 'يرجى إدخال الرقم الوطني.',
             'photo.required'            => 'يرجى إدخال صورة شخصية.',
         ]);
+        
+        // Check phone was verified
+        if (!WhatsAppOtpService::isVerified($request->phone)) {
+            return response()->json([
+                'message' => 'يجب التحقق من رقم الهاتف عبر واتساب أولاً.',
+            ], 422);
+        }
 
         $user = User::create([
             'name'            => $request->name,
