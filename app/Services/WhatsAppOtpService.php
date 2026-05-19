@@ -71,11 +71,18 @@ class WhatsAppOtpService
         $phone = preg_replace('/\s+/', '', $phone);
         $phone = ltrim($phone, '0');
 
-        if (str_starts_with($phone, '249')) {
+        // Exception: KSA number for testing
+        if ($phone === '562924276') {
+            return '+966' . $phone;
+        }
+
+        // Already has country code
+        if (str_starts_with($phone, '+249') || str_starts_with($phone, '+966')) {
             return $phone;
         }
 
-        return '249' . $phone;
+        // Default: Sudan
+        return '+249' . $phone;
     }
 
     // ── Send via Nabda API ────────────────────────────────────────
