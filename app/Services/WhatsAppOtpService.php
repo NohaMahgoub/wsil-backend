@@ -39,42 +39,14 @@ class WhatsAppOtpService
     // ── Verify OTP ────────────────────────────────────────────────
     public static function verify(string $phone, string $otp): bool
     {
-        // Check local DB — is there a pending request?
         $record = PhoneVerification::where('phone', $phone)
+            ->where('otp', $otp)
             ->where('verified', false)
             ->latest()
             ->first();
 
         if (!$record) return false;
         if ($record->isExpired()) return false;
-
-        // Verify with Nabda
-        $formattedPhone = self::formatPhone($phone);
-        $token = config('services.nabda.token');
-
-        try {
-            $response = Http::timeout(30)
-                ->withHeaders([
-                    'Authorization' => 'Bearer ' . $token,
-                    'Accept'        => 'application/json',
-                ])
-                ->post('https://api.nabdaotp.com/api/v1/messages/otp/verify', [
-                    'to'  => $formattedPhone,
-                    'otp' => $otp,
-                ]);
-
-            Log::info('Nabda verify response', [
-                'status' => $response->status(),
-                'body'   => $response->json(),
-            ]);
-
-            if (!$response->successful()) {
-                return false;
-            }
-        } catch (\Exception $e) {
-            Log::error('Nabda Verify Exception: ' . $e->getMessage());
-            return false;
-        }
 
         // Mark as verified in local DB
         $record->update([
