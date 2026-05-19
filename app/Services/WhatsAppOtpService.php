@@ -28,8 +28,8 @@ class WhatsAppOtpService
         ]);
 
         // Format phone and send via Nabda
-        $formattedPhone = self::formatPhone($phone);
-        return self::sendViaNabda($formattedPhone);
+        $whatsappPhone = self::formatPhone($phone);
+        return self::sendViaNabda($whatsappPhone, $otp); 
     }
 
     // ── Verify OTP ────────────────────────────────────────────────
@@ -117,20 +117,25 @@ class WhatsAppOtpService
     }
 
     // ── Send via Nabda ────────────────────────────────────────────
-    private static function sendViaNabda(string $phone): bool
+     private static function sendViaNabda(string $phone, string $otp): bool
     {
-        $token = self::getJwtToken();
+        $token = config('services.nabda.token');
 
-        if (!$token) {
-            Log::error('Nabda: Could not obtain JWT token');
-            return false;
-        }
+        $message = "🔐 *وصل | Wsil*\n\n"
+                . "رمز التحقق الخاص بك:\n\n"
+                . "*{$otp}*\n\n"
+                . "⏱ صالح لمدة 10 دقائق\n"
+                . "🔒 لا تشارك هذا الرمز مع أحد";
 
         try {
             $response = Http::timeout(30)
-                ->withToken($token)
-                ->post('https://api.nabdaotp.com/api/v1/messages/otp/send', [
-                    'to' => $phone,
+                ->withHeaders([
+                    'Authorization' => $token,
+                    'Content-Type'  => 'application/json',
+                ])
+                ->post('https://api.nabdaotp.com/api/v1/messages/send', [
+                    'phone'   => $phone,
+                    'message' => $message,
                 ]);
 
             Log::info('Nabda send response', [
@@ -140,8 +145,6 @@ class WhatsAppOtpService
             ]);
 
             if (!$response->successful()) {
-                // Clear cached token and retry once
-                \Illuminate\Support\Facades\Cache::forget('nabda_jwt');
                 Log::error('Nabda OTP Error', [
                     'status'   => $response->status(),
                     'response' => $response->json(),
