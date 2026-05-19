@@ -85,23 +85,15 @@ class WhatsAppOtpService
         return '+249' . $phone;
     }
 
-    // ── Send via Nabda API ────────────────────────────────────────
+     // ── Send via Nabda OTP endpoint ───────────────────────────────
     private static function sendWhatsApp(string $phone, string $otp): bool
     {
-        $apiUrl = config('services.nabda.api_url');
-        $token  = config('services.nabda.token');
-
-        $message = "🔐 *وصل | Wsil*\n\n"
-                 . "رمز التحقق الخاص بك:\n\n"
-                 . "```{$otp}```\n\n"
-                 . "⏱ صالح لمدة 10 دقائق\n"
-                 . "🔒 لا تشارك هذا الرمز مع أحد";
+        $token = config('services.nabda.token');
 
         try {
             $response = Http::withToken($token)
-                ->post("{$apiUrl}/messages/send", [
-                    'to'      => $phone,
-                    'message' => $message,
+                ->post('https://api.nabdaotp.com/api/v1/messages/otp/send', [
+                    'to' => $phone,
                 ]);
 
             if (!$response->successful()) {
