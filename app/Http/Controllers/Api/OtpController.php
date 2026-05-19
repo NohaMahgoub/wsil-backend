@@ -4,7 +4,6 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Services\WhatsAppOtpService;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Cache;
 
 class OtpController extends Controller
 {
@@ -29,43 +28,24 @@ class OtpController extends Controller
     }
 
     // Verify OTP
-    public static function verify(string $phone, string $otp): bool
+    public function verify(Request $request)
     {
-        // 1️⃣ Check local DB first (rate limit + expiry)
-        $record = PhoneVerification::where('phone', $phone)
-            ->where('verified', false)
-            ->latest()
-            ->first();
-
-        if (!$record) return false;
-        if ($record->isExpired()) return false;
-
-        // 2️⃣ Verify with Nabda
-        $formattedPhone = self::formatPhone($phone);
-        $token = config('services.nabda.token');
-
-        try {
-            $response = Http::withToken($token)
-                ->post('https://api.nabdaotp.com/api/v1/messages/otp/verify', [
-                    'to'  => $formattedPhone,
-                    'otp' => $otp,
-                ]);
-
-            if (!$response->successful()) {
-                return false;
-            }
-        } catch (\Exception $e) {
-            Log::error('Nabda Verify Exception: ' . $e->getMessage());
-            return false;
-        }
-
-        // 3️⃣ Mark as verified in local DB
-        $record->update([
-            'otp'         => $otp,
-            'verified'    => true,
-            'verified_at' => now(),
+        $request->validate([
+            'phone' => 'required|string',
+            'otp'   => 'required|string|size:6',
         ]);
 
-        return true;
+        $valid = WhatsAppOtpService::verify($request->phone, $request->otp);
+
+        if (!$valid) {
+            return response()->json([
+                'message' => 'رمز التحقق غير صحيح أو منتهي الصلاحية.',
+            ], 422);
+        }
+
+        return response()->json([
+            'message'  => 'تم التحقق من الرقم بنجاح ✅',
+            'verified' => true,
+        ]);
     }
 }
