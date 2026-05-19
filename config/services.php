@@ -44,6 +44,9 @@ return [
     'nabda' => [
         'api_url' => env('NABDA_API_URL'),
         'token'   => env('NABDA_TOKEN'),
+        'email'       => env('NABDA_EMAIL'),
+        'password'    => env('NABDA_PASSWORD'),
+        'instance_id' => env('NABDA_INSTANCE_ID'),
     ],
 
 

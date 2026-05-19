@@ -119,14 +119,16 @@ class WhatsAppOtpService
     // ── Send via Nabda ────────────────────────────────────────────
     private static function sendViaNabda(string $phone): bool
     {
-        $token = config('services.nabda.token');
+        $token = self::getJwtToken();
+
+        if (!$token) {
+            Log::error('Nabda: Could not obtain JWT token');
+            return false;
+        }
 
         try {
             $response = Http::timeout(30)
-                ->withHeaders([
-                    'Authorization' => 'Bearer ' . $token,
-                    'Accept'        => 'application/json',
-                ])
+                ->withToken($token)
                 ->post('https://api.nabdaotp.com/api/v1/messages/otp/send', [
                     'to' => $phone,
                 ]);
@@ -138,6 +140,8 @@ class WhatsAppOtpService
             ]);
 
             if (!$response->successful()) {
+                // Clear cached token and retry once
+                \Illuminate\Support\Facades\Cache::forget('nabda_jwt');
                 Log::error('Nabda OTP Error', [
                     'status'   => $response->status(),
                     'response' => $response->json(),
@@ -150,5 +154,44 @@ class WhatsAppOtpService
             Log::error('Nabda OTP Exception: ' . $e->getMessage());
             return false;
         }
+    }
+
+    private static function getJwtToken(): ?string
+    {
+        // Cache token for 50 minutes (JWT usually expires in 1 hour)
+        return \Illuminate\Support\Facades\Cache::remember('nabda_jwt', 3000, function () {
+            // Step 1: Login
+            $loginResponse = Http::post('https://api.nabdaotp.com/api/v1/auth/login', [
+                'email'    => config('services.nabda.email'),
+                'password' => config('services.nabda.password'),
+            ]);
+
+            if (!$loginResponse->successful()) {
+                Log::error('Nabda login failed', ['body' => $loginResponse->json()]);
+                return null;
+            }
+
+            $tempToken = $loginResponse->json('data.token') 
+                    ?? $loginResponse->json('token')
+                    ?? $loginResponse->json('data.accessToken');
+
+            // Step 2: Select instance
+            $instanceResponse = Http::withToken($tempToken)
+                ->post('https://api.nabdaotp.com/api/v1/auth/select-instance', [
+                    'instanceId' => config('services.nabda.instance_id'),
+                ]);
+
+            if (!$instanceResponse->successful()) {
+                Log::error('Nabda select instance failed', ['body' => $instanceResponse->json()]);
+                return null;
+            }
+
+            $jwt = $instanceResponse->json('data.token')
+                ?? $instanceResponse->json('token')
+                ?? $instanceResponse->json('data.accessToken');
+
+            Log::info('Nabda JWT obtained successfully');
+            return $jwt;
+        });
     }
 }
