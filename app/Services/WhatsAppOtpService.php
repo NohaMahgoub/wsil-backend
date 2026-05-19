@@ -19,17 +19,21 @@ class WhatsAppOtpService
             return false;
         }
 
-        // Save request to DB (for rate limiting only)
+        // Generate 6-digit OTP
+        $otp = str_pad(random_int(0, 999999), 6, '0', STR_PAD_LEFT);
+
+        // Save to DB with real OTP
         PhoneVerification::create([
             'phone'      => $phone,
-            'otp'        => '000000', // placeholder — Nabda generates the real OTP
+            'otp'        => $otp, // ← save real OTP for local verification
             'verified'   => false,
             'expires_at' => now()->addMinutes(10),
         ]);
 
         // Format phone and send via Nabda
         $whatsappPhone = self::formatPhone($phone);
-        return self::sendViaNabda($whatsappPhone, $otp); 
+        return self::sendViaNabda($whatsappPhone, $otp);
+            
     }
 
     // ── Verify OTP ────────────────────────────────────────────────
