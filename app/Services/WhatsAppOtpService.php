@@ -82,13 +82,15 @@ class WhatsAppOtpService
             return '+' . $phone;
         }
 
-        // Exception: KSA test number
+        // Remove leading zero
+        $phone = ltrim($phone, '0');
+
+        // Exception: KSA test number (after removing leading zero)
         if ($phone === '562924276') {
             return '+966' . $phone;
         }
 
         // Default: Sudan
-        $phone = ltrim($phone, '0');
         return '+249' . $phone;
     }
 
