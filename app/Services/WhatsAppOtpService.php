@@ -19,27 +19,24 @@ class WhatsAppOtpService
             return false;
         }
 
-        // Generate 6-digit OTP
-        $otp = str_pad(random_int(0, 999999), 6, '0', STR_PAD_LEFT);
-
-        // Save to DB
+        // Save request to DB (for rate limiting only)
         PhoneVerification::create([
             'phone'      => $phone,
-            'otp'        => $otp,
+            'otp'        => '000000', // placeholder — Nabda generates the real OTP
             'verified'   => false,
             'expires_at' => now()->addMinutes(10),
         ]);
 
-        // Format + Send
-        $whatsappPhone = self::formatPhone($phone);
-        return self::sendWhatsApp($whatsappPhone, $otp);
+        // Format phone and send via Nabda
+        $formattedPhone = self::formatPhone($phone);
+        return self::sendViaNabda($formattedPhone);
     }
 
     // ── Verify OTP ────────────────────────────────────────────────
     public static function verify(string $phone, string $otp): bool
     {
+        // Check local DB — is there a pending request?
         $record = PhoneVerification::where('phone', $phone)
-            ->where('otp', $otp)
             ->where('verified', false)
             ->latest()
             ->first();
@@ -47,7 +44,35 @@ class WhatsAppOtpService
         if (!$record) return false;
         if ($record->isExpired()) return false;
 
-        // Mark as verified
+        // Verify with Nabda
+        $formattedPhone = self::formatPhone($phone);
+        $token = config('services.nabda.token');
+
+        try {
+            $response = Http::timeout(30)
+                ->withHeaders([
+                    'Authorization' => 'Bearer ' . $token,
+                    'Accept'        => 'application/json',
+                ])
+                ->post('https://api.nabdaotp.com/api/v1/messages/otp/verify', [
+                    'to'  => $formattedPhone,
+                    'otp' => $otp,
+                ]);
+
+            Log::info('Nabda verify response', [
+                'status' => $response->status(),
+                'body'   => $response->json(),
+            ]);
+
+            if (!$response->successful()) {
+                return false;
+            }
+        } catch (\Exception $e) {
+            Log::error('Nabda Verify Exception: ' . $e->getMessage());
+            return false;
+        }
+
+        // Mark as verified in local DB
         $record->update([
             'verified'    => true,
             'verified_at' => now(),
@@ -56,7 +81,7 @@ class WhatsAppOtpService
         return true;
     }
 
-    // ── Check if phone is verified (for register) ─────────────────
+    // ── Check if phone is verified ────────────────────────────────
     public static function isVerified(string $phone): bool
     {
         return PhoneVerification::where('phone', $phone)
@@ -65,42 +90,57 @@ class WhatsAppOtpService
             ->exists();
     }
 
-    // ── Format Sudanese phone ─────────────────────────────────────
-    private static function formatPhone(string $phone): string
+    // ── Format phone number ───────────────────────────────────────
+    public static function formatPhone(string $phone): string
     {
-        $phone = preg_replace('/\s+/', '', $phone);
-        $phone = ltrim($phone, '0');
+        // Remove all non-digits
+        $phone = preg_replace('/\D/', '', $phone);
 
-        // Exception: KSA number for testing
+        // Already has KSA code
+        if (str_starts_with($phone, '966')) {
+            return '+' . $phone;
+        }
+
+        // Already has Sudan code
+        if (str_starts_with($phone, '249')) {
+            return '+' . $phone;
+        }
+
+        // Exception: KSA test number
         if ($phone === '562924276') {
             return '+966' . $phone;
         }
 
-        // Already has country code
-        if (str_starts_with($phone, '+249') || str_starts_with($phone, '+966')) {
-            return $phone;
-        }
-
         // Default: Sudan
+        $phone = ltrim($phone, '0');
         return '+249' . $phone;
     }
 
-     // ── Send via Nabda OTP endpoint ───────────────────────────────
-    private static function sendWhatsApp(string $phone, string $otp): bool
+    // ── Send via Nabda ────────────────────────────────────────────
+    private static function sendViaNabda(string $phone): bool
     {
         $token = config('services.nabda.token');
 
         try {
-            $response = Http::withToken($token)
+            $response = Http::timeout(30)
+                ->withHeaders([
+                    'Authorization' => 'Bearer ' . $token,
+                    'Accept'        => 'application/json',
+                ])
                 ->post('https://api.nabdaotp.com/api/v1/messages/otp/send', [
                     'to' => $phone,
                 ]);
+
+            Log::info('Nabda send response', [
+                'status' => $response->status(),
+                'body'   => $response->json(),
+                'phone'  => $phone,
+            ]);
 
             if (!$response->successful()) {
                 Log::error('Nabda OTP Error', [
                     'status'   => $response->status(),
                     'response' => $response->json(),
-                    'phone'    => $phone,
                 ]);
                 return false;
             }
