@@ -247,7 +247,6 @@ class AuthController extends Controller
     {
         $request->validate([
             'phone'                 => 'required|string',
-            'otp'                   => 'required|string|size:6',
             'password'              => 'required|string|min:6|confirmed',
         ]);
 
