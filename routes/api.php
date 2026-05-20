@@ -43,6 +43,7 @@ Route::get('/settings', function () {
         'bank_name'        => \App\Models\AppSetting::get('bank_name', 'بنك الخرطوم'),
         'account_name'     => \App\Models\AppSetting::get('account_name', 'نهى احمد'),
         'account_number'   => \App\Models\AppSetting::get('account_number', '8389213'),
+        'phone_verification' => \App\Models\AppSetting::get('phone_verification', 'false'),
     ]);
 });
 
@@ -194,6 +195,7 @@ Route::middleware(['auth:sanctum', 'role:admin'])
                 'bank_name',
                 'account_name',
                 'account_number',
+                'phone_verification',
             ];
             foreach ($fields as $field) {
                 if ($request->has($field)) {
@@ -233,7 +235,8 @@ Route::middleware(['auth:sanctum', 'role:admin'])
                 'bank_name'        => \App\Models\AppSetting::get('bank_name', 'بنك الخرطوم'),
                 'account_name'     => \App\Models\AppSetting::get('account_name', 'نهى احمد'),
                 'account_number'   => \App\Models\AppSetting::get('account_number', '8389213'),
-            ]);
+                'phone_verification' => \App\Models\AppSetting::get('phone_verification', 'false'),
+                ]);
         });
 
         // Update user service fee
