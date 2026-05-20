@@ -192,4 +192,82 @@ class AuthController extends Controller
             'user'    => $user,
         ]);
     }
+
+    // Step 1: Request OTP
+    public function resetRequest(Request $request)
+    {
+        $request->validate([
+            'phone' => 'required|string',
+        ]);
+
+        // Check if phone exists
+        $user = User::where('phone', $request->phone)->first();
+        if (!$user) {
+            return response()->json([
+                'message' => 'رقم الهاتف غير مسجل في المنصة.',
+            ], 404);
+        }
+
+        // Send OTP
+        $sent = WhatsAppOtpService::send($request->phone);
+        if (!$sent) {
+            return response()->json([
+                'message' => 'فشل إرسال رمز التحقق. حاول مرة أخرى.',
+            ], 429);
+        }
+
+        return response()->json([
+            'message' => 'تم إرسال رمز التحقق عبر واتساب ✅',
+        ]);
+    }
+
+    // Step 2: Verify OTP
+    public function resetVerify(Request $request)
+    {
+        $request->validate([
+            'phone' => 'required|string',
+            'otp'   => 'required|string|size:6',
+        ]);
+
+        $valid = WhatsAppOtpService::verify($request->phone, $request->otp);
+        if (!$valid) {
+            return response()->json([
+                'message' => 'رمز التحقق غير صحيح أو منتهي الصلاحية.',
+            ], 422);
+        }
+
+        return response()->json([
+            'message'  => 'تم التحقق بنجاح ✅',
+            'verified' => true,
+        ]);
+    }
+
+    // Step 3: Reset password
+    public function resetPassword(Request $request)
+    {
+        $request->validate([
+            'phone'                 => 'required|string',
+            'otp'                   => 'required|string|size:6',
+            'password'              => 'required|string|min:6|confirmed',
+        ]);
+
+        // Verify OTP again for security
+        $verified = WhatsAppOtpService::isVerified($request->phone);
+        if (!$verified) {
+            return response()->json([
+                'message' => 'انتهت صلاحية رمز التحقق. أعد المحاولة.',
+            ], 422);
+        }
+
+        $user = User::where('phone', $request->phone)->first();
+        if (!$user) {
+            return response()->json(['message' => 'المستخدم غير موجود.'], 404);
+        }
+
+        $user->update(['password' => bcrypt($request->password)]);
+
+        return response()->json([
+            'message' => 'تم تغيير كلمة المرور بنجاح ✅',
+        ]);
+    }
 }

@@ -28,6 +28,9 @@ use Illuminate\Http\Request;
 // Public routes
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login',    [AuthController::class, 'login']);
+Route::post('/password/reset-request', [AuthController::class, 'resetRequest']);
+Route::post('/password/reset-verify',  [AuthController::class, 'resetVerify']);
+Route::post('/password/reset',         [AuthController::class, 'resetPassword']);
 
 // OTP verification
 Route::post('otp/send',   [App\Http\Controllers\Api\OtpController::class, 'send']);
