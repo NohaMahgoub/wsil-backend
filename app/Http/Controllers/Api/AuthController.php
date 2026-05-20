@@ -7,6 +7,7 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\ValidationException;
+use App\Services\WhatsAppOtpService;
 
 class AuthController extends Controller
 {
@@ -36,8 +37,10 @@ class AuthController extends Controller
             'photo.required'            => 'يرجى إدخال صورة شخصية.',
         ]);
         
-        // Check phone was verified
-        if (!WhatsAppOtpService::isVerified($request->phone)) {
+        // Check phone was verified (only if enabled from settings)
+        $phoneVerificationEnabled = \App\Models\AppSetting::get('phone_verification', 'false') === 'true';
+
+        if ($phoneVerificationEnabled && !WhatsAppOtpService::isVerified($request->phone)) {
             return response()->json([
                 'message' => 'يجب التحقق من رقم الهاتف عبر واتساب أولاً.',
             ], 422);
