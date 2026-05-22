@@ -142,14 +142,14 @@ class DeliveryController extends Controller
             'delivery_id' => $delivery->id,
             'status'      => 'in_transit',
             'changed_by'  => $request->user()->id,
-            'notes'       => 'السائق استلم الطلب وفي الطريق للتسليم',
+            'notes'       => 'السائق استلم الطلب وفي الطريق إلى موقع التسليم',
         ]);
 
         try {
             broadcast(new DeliveryStatusChanged(
                 orderId: $order->id,
                 status:  'in_transit',
-                message: 'السائق استلم الطلب وفي الطريق إليك.',
+                message: 'السائق استلم الطلب وفي الطريق إلى موقع التسليم.',
             ));
         } catch (\Exception $e) {
             // Silent fail
