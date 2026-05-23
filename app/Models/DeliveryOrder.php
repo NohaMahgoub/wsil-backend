@@ -9,7 +9,7 @@ class DeliveryOrder extends Model
         'vendor_id', 'product_name', 'product_description',
         'weight_kg', 'pickup_address', 'pickup_lat', 'pickup_lng',
         'dropoff_address', 'dropoff_lat', 'dropoff_lng',
-        'preferred_date', 'status',
+        'preferred_date','receiver_phone','status',
     ];
 
     public function vendor()
