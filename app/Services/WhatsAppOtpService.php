@@ -175,4 +175,24 @@ class WhatsAppOtpService
             return $jwt;
         });
     }
+
+    // Send any WhatsApp message (not just OTP)
+    public static function sendMessage(string $phone, string $message): bool
+    {
+        $phone  = self::formatPhone($phone);
+        $apiUrl = config('services.nabda.api_url');
+        $token  = config('services.nabda.token');
+
+        try {
+            $response = Http::withToken($token)
+                ->post("{$apiUrl}/messages/send", [
+                    'to'      => $phone,
+                    'message' => $message,
+                ]);
+            return $response->successful();
+        } catch (\Exception $e) {
+            Log::error('WhatsApp sendMessage Error: ' . $e->getMessage());
+            return false;
+        }
+    }
 }

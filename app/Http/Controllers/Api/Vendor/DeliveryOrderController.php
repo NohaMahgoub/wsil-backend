@@ -40,6 +40,7 @@ class DeliveryOrderController extends Controller
             'dropoff_lat'         => 'nullable|numeric',
             'dropoff_lng'         => 'nullable|numeric',
             'preferred_date'      => 'nullable|date|after_or_equal:today',
+            'receiver_phone'      => 'nullable|string|max:20',
         ]);
 
         $order = DeliveryOrder::create([
@@ -54,6 +55,7 @@ class DeliveryOrderController extends Controller
                 'dropoff_lat',
                 'dropoff_lng',
                 'preferred_date',
+                'receiver_phone',
             ]),
             'vendor_id' => $request->user()->id,
             'status'    => 'open',

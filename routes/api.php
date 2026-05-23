@@ -127,6 +127,7 @@ Route::middleware(['auth:sanctum', 'role:driver'])
         Route::post('orders/{order}/start-pickup',  [DriverDeliveryController::class, 'startPickup']);
         Route::post('orders/{order}/start-transit', [DriverDeliveryController::class, 'startTransit']);
         Route::post('orders/{order}/cancel', [DriverDeliveryController::class, 'cancel']);
+        Route::post('orders/{order}/confirm-code', [DriverDeliveryController::class, 'confirmCode']);
 
         // Withdrawals
         Route::get('withdrawals',                    [DriverWithdrawalController::class, 'index']);
