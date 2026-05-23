@@ -44,7 +44,7 @@ class DeliveryOrderController extends Controller
                 'nullable',
                 'string',
                 'min:9',
-                'max:15',
+                'max:10',
                 'regex:/^[0-9]+$/',
             ],], [
                 'product_name.required'   => 'يرجى إدخال اسم المنتج.',
@@ -54,7 +54,7 @@ class DeliveryOrderController extends Controller
                 'receiver_phone.max'      => 'رقم هاتف المستلم غير صحيح.',
                 'receiver_phone.regex'    => 'رقم هاتف المستلم يجب أن يحتوي على أرقام فقط.',
             ]);
-            
+
         $order = DeliveryOrder::create([
             ...$request->only([
                 'product_name',
