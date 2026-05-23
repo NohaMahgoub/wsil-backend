@@ -13,6 +13,9 @@ class Delivery extends Model
         'driver_lat', 'driver_lng', 'status',
         'delivered_at', 'confirmed_at', 'auto_release_at',
         'picking_up_at', 'in_transit_at',
+        'delivery_code',            
+        'delivery_code_expires_at',   
+        'code_verified_at', 
     ];
 
     protected $casts = [
