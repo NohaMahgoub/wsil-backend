@@ -40,9 +40,21 @@ class DeliveryOrderController extends Controller
             'dropoff_lat'         => 'nullable|numeric',
             'dropoff_lng'         => 'nullable|numeric',
             'preferred_date'      => 'nullable|date|after_or_equal:today',
-            'receiver_phone'      => 'nullable|string|max:20',
-        ]);
-
+            'receiver_phone' => [
+                'nullable',
+                'string',
+                'min:9',
+                'max:15',
+                'regex:/^[0-9]+$/',
+            ],], [
+                'product_name.required'   => 'يرجى إدخال اسم المنتج.',
+                'pickup_address.required' => 'يرجى إدخال عنوان الاستلام.',
+                'dropoff_address.required'=> 'يرجى إدخال عنوان التسليم.',
+                'receiver_phone.min'      => 'رقم هاتف المستلم يجب أن يكون 9 أرقام على الأقل.',
+                'receiver_phone.max'      => 'رقم هاتف المستلم غير صحيح.',
+                'receiver_phone.regex'    => 'رقم هاتف المستلم يجب أن يحتوي على أرقام فقط.',
+            ]);
+            
         $order = DeliveryOrder::create([
             ...$request->only([
                 'product_name',
