@@ -24,6 +24,8 @@ class Delivery extends Model
         'auto_release_at' => 'datetime',
         'picking_up_at'   => 'datetime',  
         'in_transit_at'   => 'datetime',
+        'delivery_code_expires_at' => 'datetime', // ← new
+        'code_verified_at'         => 'datetime',
     ];
 
     public function statusLogs()
