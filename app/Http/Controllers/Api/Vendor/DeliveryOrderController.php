@@ -14,14 +14,17 @@ class DeliveryOrderController extends Controller
     // List vendor's own orders
     public function index(Request $request)
     {
-        $orders = DeliveryOrder::where('vendor_id', $request->user()->id)
-            ->with([
-                'bids.driver:id,name,phone',
-                'bids.driver.driverProfile',
-            ])
-            ->when($request->status, fn($q) => $q->where('status', $request->status))
-            ->latest()
-            ->paginate(15);
+      $orders = DeliveryOrder::where('vendor_id', $request->user()->id)
+        ->with([
+            'bids' => function($q) {
+                $q->orderBy('price', 'asc'); // ← cheapest first
+            },
+            'bids.driver:id,name,phone',
+            'bids.driver.driverProfile',
+        ])
+        ->when($request->status, fn($q) => $q->where('status', $request->status))
+        ->latest()
+        ->paginate(15);
 
         return response()->json($orders);
     }
