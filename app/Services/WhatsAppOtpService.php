@@ -186,7 +186,7 @@ class WhatsAppOtpService
         try {
             $response = Http::withToken($token)
                 ->post("{$apiUrl}/messages/send", [
-                    'to'      => $phone,
+                    'phone'      => $phone,
                     'message' => $message,
                 ]);
             return $response->successful();
