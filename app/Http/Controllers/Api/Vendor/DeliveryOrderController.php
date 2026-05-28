@@ -91,6 +91,9 @@ class DeliveryOrderController extends Controller
         }
 
         $order->load([
+            'bids' => function($q) {
+                $q->orderBy('price', 'asc');
+            },
             'bids.driver:id,name,phone',
             'bids.driver.driverProfile',
             'delivery.driver:id,name,phone',

@@ -16,7 +16,6 @@ class DeliveryOrderController extends Controller
         $orders = DeliveryOrder::where('status', 'open')
             ->with(['vendor:id,name,phone', 'bids' => function ($q) use ($request) {
                 $q->where('driver_id', $request->user()->id);
-                $q->orderBy('price', 'asc'); 
             }])
             ->latest()
             ->paginate(15);
