@@ -110,9 +110,19 @@ class WithdrawalController extends Controller
             $withdrawal->update(['status' => 'rejected']);
         });
 
+        // Notify driver
+        try {
+            $notification = new NotificationService();
+            $notification->sendToUser(
+                user:  $delivery->driver,
+                title: '❌ تم إلغاء التوصيل',
+                body:  "ألغى البائع طلب WSL-{$order->id} قبل تحركك. الطلب متاح مجدداً.",
+                data:  ['order_id' => (string) $order->id, 'type' => 'delivery_cancelled'],
+            );
+        } catch (\Exception $e) {}
+
         return response()->json([
-            'message' => 'تم إلغاء طلب السحب. تم إعادة المبلغ لمحفظتك.',
-            'balance' => $request->user()->wallet->fresh()->balance,
+            'message' => 'تم إلغاء التوصيل. تم استرجاع المبلغ لمحفظتك.',
         ]);
     }
 }
