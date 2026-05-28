@@ -179,19 +179,34 @@ class WhatsAppOtpService
     // Send any WhatsApp message (not just OTP)
     public static function sendMessage(string $phone, string $message): bool
     {
-        $phone  = self::formatPhone($phone);
-        $apiUrl = config('services.nabda.api_url');
-        $token  = config('services.nabda.token');
+        $phone = self::formatPhone($phone);
+        $token = config('services.nabda.token');
 
         try {
-            $response = Http::withToken($token)
-                ->post("{$apiUrl}/messages/send", [
-                    'phone'      => $phone,
+            $response = Http::timeout(30)
+                ->withHeaders([
+                    'Authorization' => $token,
+                    'Content-Type'  => 'application/json',
+                ])
+                ->post('https://api.nabdaotp.com/api/v1/messages/send', [
+                    'phone'   => $phone,
                     'message' => $message,
                 ]);
+
+            Log::info('Nabda sendMessage response', [
+                'status' => $response->status(),
+                'body'   => $response->json(),
+                'phone'  => $phone,
+            ]);
+
             return $response->successful();
+
         } catch (\Exception $e) {
-            Log::error('WhatsApp sendMessage Error: ' . $e->getMessage());
+            Log::error('WhatsApp sendMessage Error', [
+                'message' => $e->getMessage(),
+                'phone'   => $phone,
+            ]);
+
             return false;
         }
     }
