@@ -134,9 +134,21 @@ class DeliveryController extends Controller
             $order->update(['status' => 'disputed']);
         });
 
+        // Notify driver
+        try {
+            $notification = new NotificationService();
+            $notification->sendToUser(
+                user:  $delivery->driver,
+                title: '⚠️ تم رفع نزاع',
+                body:  "رفع البائع نزاعاً على طلب WSL-{$order->id}. سيقوم المسؤول بمراجعته.",
+                data:  ['order_id' => (string) $order->id, 'type' => 'dispute_raised'],
+            );
+        } catch (\Exception $e) {}
+
         return response()->json([
             'message' => 'تم رفع النزاع. سيقوم المسؤول بمراجعته.',
         ]);
+
     }
 
     // Vendor tracks driver live location
@@ -197,6 +209,16 @@ class DeliveryController extends Controller
             $order->update(['status' => 'open']);
             $delivery->update(['status' => 'cancelled']);
         });
+        
+        try {
+            $notification = new NotificationService();
+            $notification->sendToUser(
+                user:  $delivery->driver,
+                title: '❌ تم إلغاء التوصيل',
+                body:  "ألغى البائع طلب WSL-{$order->id} قبل تحركك. الطلب متاح مجدداً.",
+                data:  ['order_id' => (string) $order->id, 'type' => 'delivery_cancelled'],
+            );
+        } catch (\Exception $e) {}
 
         return response()->json([
             'message' => 'تم إلغاء التوصيل. تم استرجاع المبلغ لمحفظتك.',
