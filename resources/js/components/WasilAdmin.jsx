@@ -1068,7 +1068,7 @@ const SettingsPage = () => {
     if (qrFile) formData.append('qr_image', qrFile);
 
     fetch('/api/admin/settings', {
-      method: 'PUT',
+      method: 'POST',
       headers: {
         'Authorization': `Bearer ${localStorage.getItem('admin_token')}`,
         'Accept': 'application/json',
