@@ -47,6 +47,9 @@ Route::get('/settings', function () {
         'account_name'     => \App\Models\AppSetting::get('account_name', 'نهى احمد'),
         'account_number'   => \App\Models\AppSetting::get('account_number', '8389213'),
         'phone_verification' => \App\Models\AppSetting::get('phone_verification', 'false'),
+        'qr_image'           => \App\Models\AppSetting::get('qr_image') // ✅ ADD THIS
+                                    ? asset('storage/' . \App\Models\AppSetting::get('qr_image'))
+                                    : null,
     ]);
 });
 
@@ -206,6 +209,16 @@ Route::middleware(['auth:sanctum', 'role:admin'])
                     \App\Models\AppSetting::set($field, $request->$field);
                 }
             }
+
+            if ($request->hasFile('qr_image')) {
+                $old = \App\Models\AppSetting::get('qr_image');
+                if ($old) {
+                    \Illuminate\Support\Facades\Storage::disk('public')->delete($old);
+                }
+                $path = $request->file('qr_image')->store('qr', 'public');
+                \App\Models\AppSetting::set('qr_image', $path);
+            }
+
             return response()->json(['message' => 'تم حفظ الإعدادات.']);
         });
 

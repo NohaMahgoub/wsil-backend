@@ -999,14 +999,14 @@ const SettingsPage = () => {
   const [saved, setSaved] = useState(false);
   const [loading, setLoading] = useState(true);
 
-  // ← All hooks first, then fetch in useEffect
+  // ✅ NEW — QR state
+  const [qrFile, setQrFile] = useState(null);
+  const [qrPreview, setQrPreview] = useState(null);
+  const [currentQr, setCurrentQr] = useState(null);
+
   useEffect(() => {
-    // Load version
     fetch('/api/admin/app-version', {
-      headers: {
-        'Authorization': `Bearer ${localStorage.getItem('admin_token')}`,
-        'Accept': 'application/json'
-      }
+      headers: { 'Authorization': `Bearer ${localStorage.getItem('admin_token')}`, 'Accept': 'application/json' }
     }).then(r => r.json()).then(d => {
       if (d) {
         setMinVersion(d.minimum_version ?? '1.0.0');
@@ -1016,22 +1016,29 @@ const SettingsPage = () => {
       }
     }).catch(() => {});
 
-    // Load settings
-    fetch('/api/settings', {
-      headers: { 'Accept': 'application/json' }
-    }).then(r => r.json()).then(d => {
-      if (d) {
-        setWhatsapp(d.support_whatsapp ?? '249900000000');
-        setBankName(d.bank_name ?? 'بنك الخرطوم');
-        setAccountName(d.account_name ?? 'وصل للتوصيل');
-        setAccountNumber(d.account_number ?? '1234567890');
-        setPhoneVerification(d.phone_verification === 'true');
-      }
-      setLoading(false);
-    }).catch(() => setLoading(false));
+    fetch('/api/settings', { headers: { 'Accept': 'application/json' } })
+      .then(r => r.json()).then(d => {
+        if (d) {
+          setWhatsapp(d.support_whatsapp ?? '249900000000');
+          setBankName(d.bank_name ?? 'بنك الخرطوم');
+          setAccountName(d.account_name ?? 'وصل للتوصيل');
+          setAccountNumber(d.account_number ?? '1234567890');
+          setPhoneVerification(d.phone_verification === 'true');
+          setCurrentQr(d.qr_image ?? null); // ✅ load existing QR
+        }
+        setLoading(false);
+      }).catch(() => setLoading(false));
   }, []);
 
   if (loading) return <div style={{ color: C.textSec, padding: 40, textAlign: "center" }}>جاري التحميل...</div>;
+
+  // ✅ NEW — handle file selection
+  const handleQrChange = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    setQrFile(file);
+    setQrPreview(URL.createObjectURL(file));
+  };
 
   const save = () => {
     fetch('/api/admin/app-version', {
@@ -1042,29 +1049,32 @@ const SettingsPage = () => {
         'Accept': 'application/json',
       },
       body: JSON.stringify({
-        platform:        'android',
+        platform: 'android',
         minimum_version: minVersion,
-        latest_version:  latestVersion,
-        force_update:    forceUpdate,
-        update_message:  message,
-        update_url:      'https://play.google.com/store/apps/details?id=com.example.wasil_app',
+        latest_version: latestVersion,
+        force_update: forceUpdate,
+        update_message: message,
+        update_url: 'https://play.google.com/store/apps/details?id=com.example.wasil_app',
       }),
     });
+
+    // ✅ Use FormData to support file upload
+    const formData = new FormData();
+    formData.append('support_whatsapp', whatsapp);
+    formData.append('bank_name', bankName);
+    formData.append('account_name', accountName);
+    formData.append('account_number', accountNumber);
+    formData.append('phone_verification', phoneVerification.toString());
+    if (qrFile) formData.append('qr_image', qrFile);
 
     fetch('/api/admin/settings', {
       method: 'PUT',
       headers: {
         'Authorization': `Bearer ${localStorage.getItem('admin_token')}`,
-        'Content-Type': 'application/json',
         'Accept': 'application/json',
+        // ⚠️ NO Content-Type — browser sets it automatically for FormData
       },
-      body: JSON.stringify({
-        support_whatsapp: whatsapp,
-        bank_name:        bankName,
-        account_name:     accountName,
-        account_number:   accountNumber,
-        phone_verification: phoneVerification.toString(),
-      }),
+      body: formData,
     }).then(() => { setSaved(true); setTimeout(() => setSaved(false), 3000); });
   };
 
@@ -1103,7 +1113,62 @@ const SettingsPage = () => {
               style={{ width: "100%", padding: "10px 12px", background: C.surfaceHi, border: `1px solid ${C.border}`, borderRadius: 8, color: C.textPri, fontSize: 14, textAlign: "right", boxSizing: "border-box" }} />
           </div>
         ))}
-          <div style={{ fontSize: 16, fontWeight: 700, color: C.textPri, margin: "20px 0 16px", textAlign: "right" }}>
+
+        {/* ✅ NEW — QR Image Upload */}
+        <div style={{ marginBottom: 16, textAlign: "right" }}>
+          <div style={{ fontSize: 13, color: C.textSec, marginBottom: 8 }}>📷 صورة QR للدفع</div>
+          <div style={{ display: "flex", alignItems: "center", gap: 16, justifyContent: "flex-end" }}>
+
+            {/* Preview */}
+            <div style={{
+              width: 100, height: 100, borderRadius: 10,
+              border: `2px dashed ${C.border}`,
+              background: C.surfaceHi,
+              display: "flex", alignItems: "center", justifyContent: "center",
+              overflow: "hidden",
+            }}>
+              {qrPreview || currentQr ? (
+                <img
+                  src={qrPreview || currentQr}
+                  alt="QR"
+                  style={{ width: "100%", height: "100%", objectFit: "contain" }}
+                />
+              ) : (
+                <span style={{ fontSize: 32 }}>🔲</span>
+              )}
+            </div>
+
+            {/* Upload button */}
+            <div>
+              <label htmlFor="qr-upload" style={{
+                display: "inline-block",
+                padding: "8px 16px",
+                background: C.primary,
+                color: "white",
+                borderRadius: 8,
+                fontSize: 13,
+                fontWeight: 600,
+                cursor: "pointer",
+              }}>
+                {qrPreview || currentQr ? 'تغيير الصورة' : 'رفع صورة QR'}
+              </label>
+              <input
+                id="qr-upload"
+                type="file"
+                accept="image/*"
+                style={{ display: "none" }}
+                onChange={handleQrChange}
+              />
+              {(qrPreview || currentQr) && (
+                <div style={{ fontSize: 11, color: C.textSec, marginTop: 6, textAlign: "center" }}>
+                  {qrFile ? '✅ صورة جديدة محددة' : '✅ صورة محفوظة'}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        <div style={{ fontSize: 16, fontWeight: 700, color: C.textPri, margin: "20px 0 16px", textAlign: "right" }}>
           🔐 إعدادات التحقق
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 20, justifyContent: "flex-end" }}>
@@ -1113,6 +1178,7 @@ const SettingsPage = () => {
             <div style={{ width: 20, height: 20, borderRadius: "50%", background: "white", position: "absolute", top: 2, left: phoneVerification ? 22 : 2, transition: "left 0.2s" }} />
           </div>
         </div>
+
         <div style={{ marginBottom: 16, textAlign: "right" }}>
           <div style={{ fontSize: 13, color: C.textSec, marginBottom: 6 }}>رسالة التحديث</div>
           <textarea value={message} onChange={e => setMessage(e.target.value)}
