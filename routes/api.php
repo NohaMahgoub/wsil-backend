@@ -196,7 +196,7 @@ Route::middleware(['auth:sanctum', 'role:admin'])
         Route::get('app-version',  [App\Http\Controllers\Api\Admin\AppVersionController::class, 'show']);
 
         // Save settings
-        Route::put('settings', function (Request $request) {
+        Route::post('settings', function (Request $request) {
             $fields = [
                 'support_whatsapp',
                 'bank_name',
