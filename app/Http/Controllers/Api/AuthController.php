@@ -75,22 +75,24 @@ class AuthController extends Controller
 
             } else {
             
-                $photoPath = null;
-                if ($request->hasFile('photo')) {
-                    $photoPath = $request->file('photo')->store('driver_photos', 'public');
-                }
-                if ($request->hasFile('vehicle_license')) {
-                    $path = $request->file('vehicle_license')->store('vehicle_licenses', 'public');
-                    $driverProfile->update(['vehicle_license_path' => $path]);
-                }
-                                
+                $$photoPath = null;
+                    if ($request->hasFile('photo')) {
+                        $photoPath = $request->file('photo')->store('driver_photos', 'public');
+                    }
 
-                $user->driverProfile()->create([
-                    'vehicle_type'  => $request->vehicle_type,
-                    'vehicle_model' => $request->vehicle_model,
-                    'vehicle_plate' => $request->vehicle_plate,
-                    'photo_path'    => $photoPath,
-                ]);
+                    $licensePath = null;
+                    if ($request->hasFile('vehicle_license')) {
+                        $licensePath = $request->file('vehicle_license')
+                            ->store('vehicle_licenses', 'public');
+                    }
+
+                    $user->driverProfile()->create([
+                        'vehicle_type'         => $request->vehicle_type,
+                        'vehicle_model'        => $request->vehicle_model,
+                        'vehicle_plate'        => $request->vehicle_plate,
+                        'photo_path'           => $photoPath,
+                        'vehicle_license_path' => $licensePath,
+                    ]);
 
             }
 
