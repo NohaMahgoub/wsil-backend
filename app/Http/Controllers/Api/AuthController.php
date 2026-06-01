@@ -24,6 +24,7 @@ class AuthController extends Controller
             'vehicle_plate' => 'nullable|string',
             'national_id'   => 'required_if:role,driver|nullable|string',
             'photo'         => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
+            'vehicle_license' => 'nullable|image|max:5120',
             ], [
             'name.required'          => 'يرجى إدخال الاسم الكامل.',
             'phone.required'         => 'يرجى إدخال رقم الهاتف.',
@@ -78,6 +79,11 @@ class AuthController extends Controller
                 if ($request->hasFile('photo')) {
                     $photoPath = $request->file('photo')->store('driver_photos', 'public');
                 }
+                if ($request->hasFile('vehicle_license')) {
+                    $path = $request->file('vehicle_license')->store('vehicle_licenses', 'public');
+                    $driverProfile->update(['vehicle_license_path' => $path]);
+                }
+                                
 
                 $user->driverProfile()->create([
                     'vehicle_type'  => $request->vehicle_type,
