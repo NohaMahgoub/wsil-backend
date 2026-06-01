@@ -14,30 +14,30 @@ class AuthController extends Controller
     public function register(Request $request)
     {
         $request->validate([
-            'name'          => 'required|string|max:255',
-            'phone'         => 'required|string|unique:users,phone',
-            'email'         => 'nullable|email|unique:users,email',
-            'password'      => 'required|string|min:6|confirmed',
-            'role'          => 'required|in:vendor,driver',
-            'vehicle_type'  => 'required_if:role,driver|nullable|string',
-            'vehicle_model' => 'nullable|string',
-            'vehicle_plate' => 'nullable|string',
-            'national_id'   => 'required_if:role,driver|nullable|string',
-            'photo'         => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
+            'name'            => 'required|string|max:255',
+            'phone'           => 'required|string|unique:users,phone',
+            'email'           => 'nullable|email|unique:users,email',
+            'password'        => 'required|string|min:6|confirmed',
+            'role'            => 'required|in:vendor,driver',
+            'vehicle_type'    => 'required_if:role,driver|nullable|string',
+            'vehicle_model'   => 'nullable|string',
+            'vehicle_plate'   => 'nullable|string',
+            'national_id'     => 'required_if:role,driver|nullable|string',
+            'photo'           => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
             'vehicle_license' => 'nullable|image|max:5120',
-            ], [
-            'name.required'          => 'يرجى إدخال الاسم الكامل.',
-            'phone.required'         => 'يرجى إدخال رقم الهاتف.',
-            'phone.unique'           => 'رقم الهاتف مسجل مسبقاً.',
-            'password.required'      => 'يرجى إدخال كلمة المرور.',
-            'password.min'           => 'كلمة المرور يجب أن تكون 6 أحرف على الأقل.',
-            'password.confirmed'     => 'كلمة المرور غير متطابقة.',
-            'role.required'          => 'يرجى تحديد نوع الحساب.',
+        ], [
+            'name.required'            => 'يرجى إدخال الاسم الكامل.',
+            'phone.required'           => 'يرجى إدخال رقم الهاتف.',
+            'phone.unique'             => 'رقم الهاتف مسجل مسبقاً.',
+            'password.required'        => 'يرجى إدخال كلمة المرور.',
+            'password.min'             => 'كلمة المرور يجب أن تكون 6 أحرف على الأقل.',
+            'password.confirmed'       => 'كلمة المرور غير متطابقة.',
+            'role.required'            => 'يرجى تحديد نوع الحساب.',
             'vehicle_type.required_if' => 'يرجى اختيار نوع المركبة.',
             'national_id.required_if'  => 'يرجى إدخال الرقم الوطني.',
-            'photo.required'            => 'يرجى إدخال صورة شخصية.',
+            'photo.required'           => 'يرجى إدخال صورة شخصية.',
         ]);
-        
+
         // Check phone was verified (only if enabled from settings)
         $phoneVerificationEnabled = \App\Models\AppSetting::get('phone_verification', 'false') === 'true';
 
@@ -63,38 +63,39 @@ class AuthController extends Controller
         // Create wallet
         $user->wallet()->create(['balance' => 0]);
 
-        // Create profile — only once ✅
-            if ($request->role === 'vendor') {
-                $photoPath = null;
-                if ($request->hasFile('photo')) {
-                    $photoPath = $request->file('photo')->store('vendor_photos', 'public');
-                }
-                $user->vendorProfile()->create([
-                    'photo_path' => $photoPath,
-                ]);
+        // Create profile
+        if ($request->role === 'vendor') {
 
-            } else {
-            
-                $$photoPath = null;
-                    if ($request->hasFile('photo')) {
-                        $photoPath = $request->file('photo')->store('driver_photos', 'public');
-                    }
-
-                    $licensePath = null;
-                    if ($request->hasFile('vehicle_license')) {
-                        $licensePath = $request->file('vehicle_license')
-                            ->store('vehicle_licenses', 'public');
-                    }
-
-                    $user->driverProfile()->create([
-                        'vehicle_type'         => $request->vehicle_type,
-                        'vehicle_model'        => $request->vehicle_model,
-                        'vehicle_plate'        => $request->vehicle_plate,
-                        'photo_path'           => $photoPath,
-                        'vehicle_license_path' => $licensePath,
-                    ]);
-
+            $photoPath = null;
+            if ($request->hasFile('photo')) {
+                $photoPath = $request->file('photo')->store('vendor_photos', 'public');
             }
+
+            $user->vendorProfile()->create([
+                'photo_path' => $photoPath,
+            ]);
+
+        } else {
+
+            $photoPath = null;
+            if ($request->hasFile('photo')) {
+                $photoPath = $request->file('photo')->store('driver_photos', 'public');
+            }
+
+            $licensePath = null;
+            if ($request->hasFile('vehicle_license')) {
+                $licensePath = $request->file('vehicle_license')
+                    ->store('vehicle_licenses', 'public');
+            }
+
+            $user->driverProfile()->create([
+                'vehicle_type'         => $request->vehicle_type,
+                'vehicle_model'        => $request->vehicle_model,
+                'vehicle_plate'        => $request->vehicle_plate,
+                'photo_path'           => $photoPath,
+                'vehicle_license_path' => $licensePath,
+            ]);
+        }
 
         $token = $user->createToken('auth_token')->plainTextToken;
 
@@ -159,12 +160,11 @@ class AuthController extends Controller
     public function me(Request $request)
     {
         $user = $request->user()->load('driverProfile', 'vendorProfile');
-        
+
         return response()->json([
             'user' => $user,
             'role' => $user->getRoleNames()->first(),
         ]);
-
     }
 
     public function updateProfile(Request $request)
@@ -208,7 +208,6 @@ class AuthController extends Controller
             'phone' => 'required|string',
         ]);
 
-        // Check if phone exists
         $user = User::where('phone', $request->phone)->first();
         if (!$user) {
             return response()->json([
@@ -216,7 +215,6 @@ class AuthController extends Controller
             ], 404);
         }
 
-        // Send OTP
         $sent = WhatsAppOtpService::send($request->phone);
         if (!$sent) {
             return response()->json([
@@ -254,11 +252,10 @@ class AuthController extends Controller
     public function resetPassword(Request $request)
     {
         $request->validate([
-            'phone'                 => 'required|string',
-            'password'              => 'required|string|min:6|confirmed',
+            'phone'    => 'required|string',
+            'password' => 'required|string|min:6|confirmed',
         ]);
 
-        // Verify OTP again for security
         $verified = WhatsAppOtpService::isVerified($request->phone);
         if (!$verified) {
             return response()->json([
