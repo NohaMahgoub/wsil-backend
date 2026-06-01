@@ -962,6 +962,34 @@ const UsersPage = ({ type }) => {
                 <div style={{ fontSize: 12, color: C.textSec }}>
                   {selected.driver_profile.vehicle_model ?? ''} {selected.driver_profile.vehicle_plate ?? ''}
                 </div>
+
+                {/* Vehicle License Photo */}
+                {selected.driver_profile.vehicle_license_path && (
+                  <div style={{ marginTop: 12 }}>
+                    <div style={{ fontSize: 11, color: C.textSec, marginBottom: 6 }}>
+                      رخصة المركبة
+                    </div>
+                    <img
+                      src={`/storage/${selected.driver_profile.vehicle_license_path}`}
+                      alt="رخصة المركبة"
+                      style={{
+                        width: "100%",
+                        borderRadius: 10,
+                        border: `1px solid ${C.border}`,
+                        objectFit: "cover",
+                        maxHeight: 160,
+                        cursor: "pointer",
+                      }}
+                      onClick={() => window.open(
+                        `/storage/${selected.driver_profile.vehicle_license_path}`,
+                        '_blank'
+                      )}
+                    />
+                    <div style={{ fontSize: 11, color: C.textMuted, marginTop: 4, textAlign: "center" }}>
+                      اضغط لعرض بحجم كامل
+                    </div>
+                  </div>
+                )}
               </div>
             )}
 
