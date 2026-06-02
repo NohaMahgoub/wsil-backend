@@ -192,23 +192,28 @@ class DeliveryController extends Controller
         $delivery = $order->delivery;
 
         DB::transaction(function () use ($order, $delivery, $request) {
-            // Refund vendor
-            $request->user()->wallet->credit(
-                amount:      $delivery->total_charged,
-                description: "↩ استرجاع مبلغ الطلب WSL-{$order->id}",
-                reference:   "CANCEL-{$order->id}",
-            );
+        // Refund vendor
+        $request->user()->wallet->credit(
+            amount:      $delivery->total_charged,
+            description: "↩ استرجاع مبلغ الطلب WSL-{$order->id}",
+            reference:   "CANCEL-{$order->id}",
+        );
 
-            DeliveryStatusLog::create([
-                'delivery_id' => $delivery->id,
-                'status'      => 'cancelled',
-                'changed_by'  => $request->user()->id,
-                'notes'       => 'البائع ألغى التوصيل قبل تحرك السائق',
-            ]);
+        DeliveryStatusLog::create([
+            'delivery_id' => $delivery->id,
+            'status'      => 'cancelled',
+            'changed_by'  => $request->user()->id,
+            'notes'       => 'البائع ألغى التوصيل قبل تحرك السائق',
+        ]);
 
-            $order->update(['status' => 'open']);
-            $delivery->update(['status' => 'cancelled']);
-        });
+        // Reset all bids back to pending
+        \App\Models\OrderBid::where('order_id', $order->id)
+            ->whereIn('status', ['accepted', 'rejected'])
+            ->update(['status' => 'pending']);
+
+        $order->update(['status' => 'open']);
+        $delivery->update(['status' => 'cancelled']);
+    });
         
         try {
             $notification = new NotificationService();
