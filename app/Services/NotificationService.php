@@ -52,9 +52,6 @@ class NotificationService
                 ],
             ]);
 
-            \Log::info('FCM Response: ' . $response->body());
-            echo "FCM Status: " . $response->status() . "\n";
-            echo "FCM Body: " . $response->body() . "\n";
 
         } catch (\Exception $e) {
             \Log::error('FCM Error: ' . $e->getMessage());
