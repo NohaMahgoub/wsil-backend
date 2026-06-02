@@ -92,7 +92,10 @@ class BidController extends Controller
                 'status'                => 'in_progress',
             ]);
 
-          try {
+          
+        });
+
+        try {
                 $notification = new NotificationService();
                 $notification->sendToUser(
                     user:  $bid->driver,
@@ -102,8 +105,7 @@ class BidController extends Controller
                 );
             } catch (\Exception $e) {
                 // Silent fail
-            }
-        });
+        }
 
         return response()->json([
             'message' => 'تم اختيار السائق. المبلغ محجوز في الضمان.',
