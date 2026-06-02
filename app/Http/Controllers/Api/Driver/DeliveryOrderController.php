@@ -17,6 +17,9 @@ class DeliveryOrderController extends Controller
             ->with(['vendor:id,name,phone', 'bids' => function ($q) use ($request) {
                 $q->where('driver_id', $request->user()->id);
             }])
+            ->withCount(['bids as bids_count' => function ($q) {
+                $q->where('status', 'pending');
+            }])
             ->latest()
             ->paginate(15);
 
