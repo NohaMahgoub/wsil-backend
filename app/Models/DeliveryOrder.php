@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 class DeliveryOrder extends Model
 {
     protected $fillable = [
-        'vendor_id', 'product_name', 'product_description',
+        'vendor_id', 'product_name', 'product_description','product_image',
         'weight_kg', 'pickup_address', 'pickup_lat', 'pickup_lng',
         'dropoff_address', 'dropoff_lat', 'dropoff_lng',
         'preferred_date','receiver_phone','status',

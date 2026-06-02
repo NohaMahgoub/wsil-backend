@@ -43,6 +43,7 @@ class DeliveryOrderController extends Controller
             'dropoff_lat'         => 'nullable|numeric',
             'dropoff_lng'         => 'nullable|numeric',
             'preferred_date'      => 'nullable|date|after_or_equal:today',
+            'product_image'       => 'nullable|image|mimes:jpg,jpeg,png|max:3072',
             'receiver_phone' => [
                 'nullable',
                 'string',
@@ -76,6 +77,10 @@ class DeliveryOrderController extends Controller
             'status'    => 'open',
         ]);
 
+        if ($request->hasFile('product_image')) {
+            $path = $request->file('product_image')->store('product_images', 'public');
+            $order->update(['product_image' => $path]);
+        }
         return response()->json([
             'message' => 'تم نشر الطلب. يمكن للسائقين تقديم عروضهم الآن.',
             'order'   => $order,
