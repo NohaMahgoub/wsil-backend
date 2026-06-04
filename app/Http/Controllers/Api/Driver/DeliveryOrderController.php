@@ -13,15 +13,30 @@ class DeliveryOrderController extends Controller
     // Driver browses all open orders
     public function index(Request $request)
     {
-        $orders = DeliveryOrder::where('status', 'open')
-            ->with(['vendor:id,name,phone', 'bids' => function ($q) use ($request) {
-                $q->where('driver_id', $request->user()->id);
-            }])
-            ->withCount(['bids as bids_count' => function ($q) {
-                $q->where('status', 'pending');
-            }])
-            ->latest()
-            ->paginate(15);
+        $query = DeliveryOrder::where('status', 'open')
+        ->with(['vendor:id,name,phone', 'bids' => function ($q) use ($request) {
+            $q->where('driver_id', $request->user()->id);
+        }])
+        ->withCount(['bids as bids_count' => function ($q) {
+            $q->where('status', 'pending');
+        }]);
+
+        // Filter by distance if driver sends location
+        if ($request->filled('lat') && $request->filled('lng')) {
+            $lat    = $request->lat;
+            $lng    = $request->lng;
+            $radius = $request->get('radius', 20); // km, default 20
+
+            $query->whereNotNull('pickup_lat')
+                ->whereNotNull('pickup_lng')
+                ->selectRaw("*, ( 6371 * acos( cos( radians(?) ) * cos( radians(pickup_lat) ) * cos( radians(pickup_lng) - radians(?) ) + sin( radians(?) ) * sin( radians(pickup_lat) ) ) ) AS distance", [$lat, $lng, $lat])
+                ->having('distance', '<=', $radius)
+                ->orderBy('distance');
+        } else {
+            $query->latest();
+        }
+
+        $orders = $query->paginate(15);
 
         return response()->json($orders);
     }
