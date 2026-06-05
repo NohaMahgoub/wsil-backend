@@ -22,7 +22,7 @@ class DeliveryOrderController extends Controller
         }]);
 
         // Filter by distance if driver sends location
-        if ($request->filled('lat') && $request->filled('lng')) {
+        if ($request->filled('lat') && $request->filled('lng') && $request->filled('radius')) {
             $lat    = $request->lat;
             $lng    = $request->lng;
             $radius = $request->get('radius', 100); // km, default 100
