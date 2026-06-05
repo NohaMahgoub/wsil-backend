@@ -25,11 +25,11 @@ class DeliveryOrderController extends Controller
         if ($request->filled('lat') && $request->filled('lng')) {
             $lat    = $request->lat;
             $lng    = $request->lng;
-            $radius = $request->get('radius', 20); // km, default 20
+            $radius = $request->get('radius', 100); // km, default 100
 
             $query->whereNotNull('pickup_lat')
                 ->whereNotNull('pickup_lng')
-                ->selectRaw("*, ( 6371 * acos( cos( radians(?) ) * cos( radians(pickup_lat) ) * cos( radians(pickup_lng) - radians(?) ) + sin( radians(?) ) * sin( radians(pickup_lat) ) ) ) AS distance", [$lat, $lng, $lat])
+                ->selectRaw("delivery_orders.*, ( 6371 * acos( cos( radians(?) ) * cos( radians(pickup_lat) ) * cos( radians(pickup_lng) - radians(?) ) + sin( radians(?) ) * sin( radians(pickup_lat) ) ) ) AS distance", [$lat, $lng, $lat])
                 ->having('distance', '<=', $radius)
                 ->orderBy('distance');
         } else {
