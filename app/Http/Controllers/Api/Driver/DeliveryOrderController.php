@@ -36,7 +36,7 @@ class DeliveryOrderController extends Controller
             $query->latest();
         }
 
-        $orders = $query->paginate(15);
+        $orders = $query->paginate(100);
 
         return response()->json($orders);
     }
