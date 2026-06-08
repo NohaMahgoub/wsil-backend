@@ -14,31 +14,39 @@ class DeliveryOrderController extends Controller
     public function index(Request $request)
     {
         $query = DeliveryOrder::where('status', 'open')
-        ->with(['vendor:id,name,phone', 'bids' => function ($q) use ($request) {
-            $q->where('driver_id', $request->user()->id);
-        }])
-        ->withCount(['bids as bids_count' => function ($q) {
-            $q->where('status', 'pending');
-        }]);
+            ->with(['vendor:id,name,phone', 'bids' => function ($q) use ($request) {
+                $q->where('driver_id', $request->user()->id);
+            }])
+            ->withCount(['bids as bids_count' => function ($q) {
+                $q->where('status', 'pending');
+            }]);
 
-        // Filter by distance if driver sends location
         if ($request->filled('lat') && $request->filled('lng') && $request->filled('radius')) {
             $lat    = $request->lat;
             $lng    = $request->lng;
-            $radius = $request->get('radius', 100); // km, default 100
+            $radius = $request->radius;
 
-            $query->whereNotNull('pickup_lat')
+            // Use subquery to avoid HAVING conflict with paginate
+            $results = $query
+                ->whereNotNull('pickup_lat')
                 ->whereNotNull('pickup_lng')
-                ->selectRaw("delivery_orders.*, ( 6371 * acos( cos( radians(?) ) * cos( radians(pickup_lat) ) * cos( radians(pickup_lng) - radians(?) ) + sin( radians(?) ) * sin( radians(pickup_lat) ) ) ) AS distance", [$lat, $lng, $lat])
-                ->having('distance', '<=', $radius)
-                ->orderBy('distance');
-        } else {
-            $query->latest();
+                ->get()
+                ->filter(function ($order) use ($lat, $lng, $radius) {
+                    $distance = 6371 * acos(
+                        cos(deg2rad($lat)) *
+                        cos(deg2rad($order->pickup_lat)) *
+                        cos(deg2rad($order->pickup_lng) - deg2rad($lng)) +
+                        sin(deg2rad($lat)) *
+                        sin(deg2rad($order->pickup_lat))
+                    );
+                    return $distance <= $radius;
+                })
+                ->values();
+
+            return response()->json(['data' => $results, 'total' => $results->count()]);
         }
 
-        $orders = $query->paginate(100);
-
-        return response()->json($orders);
+        return response()->json($query->paginate(100));
     }
 
     // Driver views a single order detail
