@@ -24,7 +24,7 @@ class AutoReleaseDeliveries extends Command
                 $delivery->driver->wallet->credit(
                     amount:      $delivery->delivery_price,
                     description: "Auto-released payment for delivery #{$delivery->order->id}",
-                    reference:   "AUTO-DELIVERY-{$delivery->id}",
+                    reference:   "تحرير تلقائي لأرباح توصيل WSL-{$delivery->id}",
                 );
 
                 // Update statuses
