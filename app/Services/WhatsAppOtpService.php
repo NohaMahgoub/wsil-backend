@@ -85,8 +85,14 @@ class WhatsAppOtpService
         // Remove leading zero
         $phone = ltrim($phone, '0');
 
-        // Exception: KSA test number (after removing leading zero)
-        if ($phone === '562924276') {
+        // KSA test numbers (after removing leading zero)
+        $testNumbers = [
+            '562924276',
+            '542450508',
+            '575680211',
+        ];
+
+        if (in_array($phone, $testNumbers)) {
             return '+966' . $phone;
         }
 
