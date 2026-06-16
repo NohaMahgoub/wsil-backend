@@ -11,6 +11,7 @@ class DriverProfile extends Model
         'vehicle_model',
         'vehicle_plate',
         'national_id',
+        'national_id_photo_path',
         'photo_path',
         'vehicle_license_path',
         'rating', 'total_reviews', 'is_verified',

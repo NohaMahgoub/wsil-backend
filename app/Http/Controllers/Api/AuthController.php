@@ -22,9 +22,10 @@ class AuthController extends Controller
             'vehicle_type'    => 'required_if:role,driver|nullable|string',
             'vehicle_model'   => 'nullable|string',
             'vehicle_plate'   => 'nullable|string',
-            'national_id'     => 'required_if:role,driver|nullable|string',
-            'photo'           => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
-            'vehicle_license' => 'nullable|image|max:5120',
+            'national_id'        => 'nullable|string', 
+            'national_id_photo'  => 'required_if:role,driver|nullable|image|mimes:jpg,jpeg,png|max:5120',
+            'photo'              => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
+            'vehicle_license'    => 'nullable|image|max:5120',
         ], [
             'name.required'            => 'يرجى إدخال الاسم الكامل.',
             'phone.required'           => 'يرجى إدخال رقم الهاتف.',
@@ -34,7 +35,7 @@ class AuthController extends Controller
             'password.confirmed'       => 'كلمة المرور غير متطابقة.',
             'role.required'            => 'يرجى تحديد نوع الحساب.',
             'vehicle_type.required_if' => 'يرجى اختيار نوع المركبة.',
-            'national_id.required_if'  => 'يرجى إدخال الرقم الوطني.',
+            'national_id_photo.required_if'  => 'يرجى إدخال صورة الرقم الوطني.',
             'photo.required'           => 'يرجى إدخال صورة شخصية.',
         ]);
 
@@ -88,15 +89,22 @@ class AuthController extends Controller
                     ->store('vehicle_licenses', 'public');
             }
 
+            $nationalIdPhotoPath = null;
+            if ($request->hasFile('national_id_photo')) {
+                $nationalIdPhotoPath = $request->file('national_id_photo')
+                    ->store('national_id_photos', 'public');
+            }
+
             $user->driverProfile()->create([
-                'vehicle_type'         => $request->vehicle_type,
-                'vehicle_model'        => $request->vehicle_model,
-                'vehicle_plate'        => $request->vehicle_plate,
-                'photo_path'           => $photoPath,
-                'vehicle_license_path' => $licensePath,
+                'vehicle_type'            => $request->vehicle_type,
+                'vehicle_model'           => $request->vehicle_model,
+                'vehicle_plate'           => $request->vehicle_plate,
+                'national_id'             => $request->national_id,
+                'national_id_photo_path'  => $nationalIdPhotoPath,
+                'photo_path'              => $photoPath,
+                'vehicle_license_path'    => $licensePath,
             ]);
         }
-
         $token = $user->createToken('auth_token')->plainTextToken;
 
         return response()->json([
