@@ -127,6 +127,7 @@ const DashboardPage = ({ setPage }) => {
       </div>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 16, marginBottom: 28 }}>
         <StatCard label="إجمالي الإيرادات" value={`SDG ${stats.total_revenue ?? 0}`} sub="كل الوقت" icon="💰" accent={C.primary} trend="up" />
+        <StatCard label="سائقون قيد الانتظار" value={stats.pending_drivers ?? 0} sub="بانتظار الموافقة" icon="🕐" accent={C.red} />
         <StatCard label="الطلبات النشطة" value={stats.active_orders ?? 0} sub="قيد التنفيذ" icon="📦" accent={C.orange} trend="up" />
         <StatCard label="الإجراءات المعلقة" value={stats.pending_actions ?? 0} sub={`${stats.pending_topups ?? 0} شحن · ${stats.pending_disputes ?? 0} نزاع`} icon="⚠" accent={C.amber} />
         <StatCard label="المستخدمون" value={stats.total_users ?? 0} sub={`${stats.total_vendors ?? 0} بائع · ${stats.total_drivers ?? 0} سائق`} icon="👥" accent={C.blue} trend="up" />

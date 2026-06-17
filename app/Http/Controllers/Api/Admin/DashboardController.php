@@ -27,6 +27,8 @@ class DashboardController extends Controller
         $totalUsers      = User::whereIn('role', ['vendor', 'driver'])->count();
         $totalVendors    = User::where('role', 'vendor')->count();
         $totalDrivers    = User::where('role', 'driver')->count();
+        $pendingDrivers  = User::where('role', 'driver')->where('approval_status', 'pending')->count();
+
 
         // Pending actions count
         $pendingActions = $pendingTopups + $pendingDisputes + $pendingWithdrawals;
@@ -66,6 +68,7 @@ class DashboardController extends Controller
                 'total_users'         => $totalUsers,
                 'total_vendors'       => $totalVendors,
                 'total_drivers'       => $totalDrivers,
+                'pending_drivers'     => $pendingDrivers,
                 'pending_topups'      => $pendingTopups,
                 'pending_disputes'    => $pendingDisputes,
                 'pending_withdrawals' => $pendingWithdrawals,
