@@ -728,15 +728,74 @@ const UsersPage = ({ type }) => {
     </div>
   );
 
+
+  const exportToCsv = () => {
+    const headers = type === 'vendors'
+      ? ['الرقم', 'الاسم', 'الهاتف', 'الطلبات', 'المحفظة', 'تاريخ الانضمام', 'الحالة']
+      : ['الرقم', 'الاسم', 'الهاتف', 'التقييم', 'المحفظة', 'تاريخ الانضمام', 'الحالة', 'الاعتماد'];
+
+    const rows = data.map(u => {
+      const base = [
+        u.id,
+        u.name ?? '',
+        u.phone ?? '',
+        type === 'vendors' ? (u.delivery_orders_count ?? 0) : (u.driver_profile?.rating ?? ''),
+        u.wallet?.balance ?? 0,
+        new Date(u.created_at).toLocaleDateString(),
+        u.is_suspended ? 'موقوف' : 'نشط',
+      ];
+      if (type === 'drivers') {
+        base.push(
+          u.approval_status === 'approved' ? 'معتمد' :
+          u.approval_status === 'rejected' ? 'مرفوض' : 'قيد الانتظار'
+        );
+      }
+      return base;
+    });
+
+    const csvContent = [headers, ...rows]
+      .map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(','))
+      .join('\n');
+
+    const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `${type}-${new Date().toISOString().split('T')[0]}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
   const title = type === "vendors" ? "البائعون" : "السائقون";
 
   return (
     <div>
-      <div style={{ marginBottom: 28 }}>
-        <div style={{ fontSize: 24, fontWeight: 800, color: C.textPri }}>{title}</div>
-        <div style={{ fontSize: 14, color: C.textSec, marginTop: 4 }}>
-          إدارة {title} المسجلين في المنصة
+      <div style={{ marginBottom: 28, display: "flex", justifyContent: "space-between", alignItems: "flex-end" }}>
+        <div>
+          <div style={{ fontSize: 24, fontWeight: 800, color: C.textPri }}>{title}</div>
+          <div style={{ fontSize: 14, color: C.textSec, marginTop: 4 }}>
+            إدارة {title} المسجلين في المنصة
+          </div>
         </div>
+        <button
+          onClick={exportToCsv}
+          style={{
+            padding: "10px 18px",
+            background: C.primary,
+            color: C.white,
+            border: "none",
+            borderRadius: 10,
+            fontWeight: 700,
+            fontSize: 13,
+            cursor: "pointer",
+            display: "flex",
+            alignItems: "center",
+            gap: 6,
+          }}
+        >
+          ⬇ تصدير CSV
+        </button>
       </div>
 
       <div style={{ display: "grid", gridTemplateColumns: selected ? "1fr 320px" : "1fr", gap: 20 }}>
@@ -960,9 +1019,12 @@ const UsersPage = ({ type }) => {
                   🚗 {selected.driver_profile.vehicle_type ?? '—'}
                 </div>
                 <div style={{ fontSize: 12, color: C.textSec }}>
-                  {selected.driver_profile.vehicle_model ?? ''} {selected.driver_profile.vehicle_plate ?? ''}
+                  {selected.driver_profile.vehicle_model ?? ''}
                 </div>
-
+                <div style={{ fontSize: 12, color: C.textSec }}>
+                  {selected.driver_profile.vehicle_plate ?? ''}
+                </div>
+                  
                 {/* Vehicle License Photo */}
                 {selected.driver_profile.vehicle_license_path && (
                   <div style={{ marginTop: 12 }}>
