@@ -689,6 +689,10 @@ const UsersPage = ({ type }) => {
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState(null);
+  const [statusFilter, setStatusFilter] = useState('all'); // all | active | suspended
+  const [approvalFilter, setApprovalFilter] = useState('all'); // all | approved | pending | rejected
+  const [dateFrom, setDateFrom] = useState('');
+  const [dateTo, setDateTo] = useState('');
 
   useEffect(() => {
     fetch(`/api/admin/${type}`, {
@@ -727,14 +731,21 @@ const UsersPage = ({ type }) => {
       جاري التحميل...
     </div>
   );
-
+const filteredData = data.filter(u => {
+    if (statusFilter === 'active' && u.is_suspended) return false;
+    if (statusFilter === 'suspended' && !u.is_suspended) return false;
+    if (type === 'drivers' && approvalFilter !== 'all' && u.approval_status !== approvalFilter) return false;
+    if (dateFrom && new Date(u.created_at) < new Date(dateFrom)) return false;
+    if (dateTo && new Date(u.created_at) > new Date(dateTo + 'T23:59:59')) return false;
+    return true;
+  });
 
   const exportToCsv = () => {
     const headers = type === 'vendors'
       ? ['الرقم', 'الاسم', 'الهاتف', 'الطلبات', 'المحفظة', 'تاريخ الانضمام', 'الحالة']
       : ['الرقم', 'الاسم', 'الهاتف', 'التقييم', 'المحفظة', 'تاريخ الانضمام', 'الحالة', 'الاعتماد'];
 
-    const rows = data.map(u => {
+    const rows = filteredData.map(u => {
       const base = [
         u.id,
         u.name ?? '',
@@ -767,6 +778,7 @@ const UsersPage = ({ type }) => {
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
   };
+
   const title = type === "vendors" ? "البائعون" : "السائقون";
 
   return (
@@ -798,10 +810,78 @@ const UsersPage = ({ type }) => {
         </button>
       </div>
 
+      {/* ── Filters ── */}
+      <div style={{
+        display: "flex", gap: 12, marginBottom: 20, flexWrap: "wrap",
+        background: C.surface, border: `1px solid ${C.border}`,
+        borderRadius: 12, padding: "14px 16px",
+      }}>
+        <div>
+          <div style={{ fontSize: 11, color: C.textSec, marginBottom: 4 }}>الحالة</div>
+          <select
+            value={statusFilter}
+            onChange={e => setStatusFilter(e.target.value)}
+            style={{ padding: "7px 10px", borderRadius: 8, border: `1px solid ${C.border}`, background: C.surfaceHi, color: C.textPri, fontSize: 13 }}
+          >
+            <option value="all">الكل</option>
+            <option value="active">نشط</option>
+            <option value="suspended">موقوف</option>
+          </select>
+        </div>
+
+        {type === 'drivers' && (
+          <div>
+            <div style={{ fontSize: 11, color: C.textSec, marginBottom: 4 }}>الاعتماد</div>
+            <select
+              value={approvalFilter}
+              onChange={e => setApprovalFilter(e.target.value)}
+              style={{ padding: "7px 10px", borderRadius: 8, border: `1px solid ${C.border}`, background: C.surfaceHi, color: C.textPri, fontSize: 13 }}
+            >
+              <option value="all">الكل</option>
+              <option value="approved">معتمد</option>
+              <option value="pending">قيد الانتظار</option>
+              <option value="rejected">مرفوض</option>
+            </select>
+          </div>
+        )}
+
+        <div>
+          <div style={{ fontSize: 11, color: C.textSec, marginBottom: 4 }}>من تاريخ</div>
+          <input
+            type="date"
+            value={dateFrom}
+            onChange={e => setDateFrom(e.target.value)}
+            style={{ padding: "7px 10px", borderRadius: 8, border: `1px solid ${C.border}`, background: C.surfaceHi, color: C.textPri, fontSize: 13 }}
+          />
+        </div>
+
+        <div>
+          <div style={{ fontSize: 11, color: C.textSec, marginBottom: 4 }}>إلى تاريخ</div>
+          <input
+            type="date"
+            value={dateTo}
+            onChange={e => setDateTo(e.target.value)}
+            style={{ padding: "7px 10px", borderRadius: 8, border: `1px solid ${C.border}`, background: C.surfaceHi, color: C.textPri, fontSize: 13 }}
+          />
+        </div>
+
+        <div style={{ display: "flex", alignItems: "flex-end" }}>
+          <button
+            onClick={() => { setStatusFilter('all'); setApprovalFilter('all'); setDateFrom(''); setDateTo(''); }}
+            style={{
+              padding: "8px 14px", background: C.surfaceHi, border: `1px solid ${C.border}`,
+              borderRadius: 8, color: C.textSec, fontSize: 13, cursor: "pointer",
+            }}
+          >
+            إعادة تعيين
+          </button>
+        </div>
+      </div>
+
       <div style={{ display: "grid", gridTemplateColumns: selected ? "1fr 320px" : "1fr", gap: 20 }}>
         {/* ── Table ── */}
         <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, padding: "20px" }}>
-          {data.length === 0 && (
+          {filteredData.length === 0 && (
             <div style={{ color: C.textSec, textAlign: "center", padding: 40 }}>
               لا يوجد {title}
             </div>
@@ -816,7 +896,7 @@ const UsersPage = ({ type }) => {
               </tr>
             </thead>
             <tbody>
-              {data.map(u => (
+              {filteredData.map(u => (
                 <tr key={u.id}>
                   <Td>
                     <span style={{ color: C.textMuted, fontFamily: "monospace", fontSize: 12 }}>
