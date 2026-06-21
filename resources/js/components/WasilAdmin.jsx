@@ -1765,13 +1765,13 @@ export default function WasilAdmin({ onLogout }) {
       <div style={{ display: "flex", minHeight: "100vh", background: C.bg, fontFamily: "'Tajawal', sans-serif", color: C.textPri, direction: "rtl", transition: "background 0.3s" }}>
         <aside style={{ width: 230, background: C.surface, borderLeft: `1px solid ${C.border}`, display: "flex", flexDirection: "column", position: "sticky", top: 0, height: "100vh" }}>
           <div style={{ padding: "20px", borderBottom: `1px solid ${C.border}` }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <div style={{ display: "flex", alignItems: "center"}}>
               <button onClick={toggleTheme} style={{ background: C.surfaceHi, border: `1px solid ${C.border}`, borderRadius: 8, width: 30, height: 30, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", fontSize: 14 }}>{dark ? "☀️" : "🌙"}</button>
               <div style={{ flex: 1, textAlign: "right" }}>
                 <img
                   src="/images/wsil-logo.png"
                   alt="وصل"
-                  style={{ height: 100, borderRadius: 10, objectFit: "contain" }}
+                  style={{ height: 36,objectFit: "contain" }}
                   onError={e => {
                     e.target.style.display = 'none';
                     e.target.nextSibling.style.display = 'flex';
