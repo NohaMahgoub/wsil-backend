@@ -16,13 +16,14 @@ class AuthController extends Controller
         $request->validate([
             'name'            => 'required|string|max:255',
             'phone'           => [
-                                    'required',
-                                    'string',
-                                    \Illuminate\Validation\Rule::unique('users', 'phone')->where(function ($query) {
-                                        // Block re-registration only for pending or approved accounts
-                                        return $query->whereIn('approval_status', ['pending', 'approved']);
-                                    }),
-                                ],
+                'required',
+                'string',
+                'regex:/^0\d{9}$/',
+                \Illuminate\Validation\Rule::unique('users', 'phone')->where(function ($query) {
+                    // Block re-registration only for pending or approved accounts
+                    return $query->whereIn('approval_status', ['pending', 'approved']);
+                }),
+            ],
             'email'           => 'nullable|email|unique:users,email',
             'password'        => 'required|string|min:6|confirmed',
             'role'            => 'required|in:vendor,driver',
@@ -36,8 +37,8 @@ class AuthController extends Controller
         ], [
             'name.required'            => 'يرجى إدخال الاسم الكامل.',
             'phone.required'           => 'يرجى إدخال رقم الهاتف.',
+            'phone.regex'              => 'رقم الهاتف يجب أن يكون 10 أرقام ويبدأ بـ 0.',
             'phone.unique'             => 'رقم الهاتف مسجل مسبقاً.',
-            'password.required'        => 'يرجى إدخال كلمة المرور.',
             'password.min'             => 'كلمة المرور يجب أن تكون 6 أحرف على الأقل.',
             'password.confirmed'       => 'كلمة المرور غير متطابقة.',
             'role.required'            => 'يرجى تحديد نوع الحساب.',
