@@ -88,22 +88,36 @@ class UserController extends Controller
 
     public function rejectDriver(Request $request, User $user)
     {
-        if ($user->role !== 'driver') {
-            return response()->json(['message' => 'المستخدم ليس سائقاً.'], 422);
-        }
-
         $request->validate([
-            'reason' => 'nullable|string',
+            'reason' => 'required|string|max:500',
         ]);
 
         $user->update([
             'approval_status' => 'rejected',
-            'approved_at'     => now(),
-            'approved_by'     => $request->user()->id,
+            'rejection_reason' => $request->reason,
         ]);
 
-        return response()->json([
-            'message' => 'تم رفض السائق.',
-        ]);
+        // Send WhatsApp notification
+        try {
+            \App\Services\WhatsAppOtpService::sendMessage(
+                $user->phone,
+                "❌ عزيزي {$user->name}،\n\nتم رفض طلب انضمامك كسائق في منصة وصل للسبب التالي:\n\n*{$request->reason}*\n\nيمكنك التسجيل مجدداً بعد تصحيح البيانات.\n\nفريق وصل 🚗"
+            );
+        } catch (\Exception $e) {
+            // Silent fail
+        }
+
+        // Send push notification if they have FCM token
+        try {
+            $notification = new \App\Services\NotificationService();
+            $notification->sendToUser(
+                user: $user,
+                title: '❌ تم رفض طلبك',
+                body: $request->reason,
+                data: ['type' => 'account_rejected'],
+            );
+        } catch (\Exception $e) {}
+
+        return response()->json(['message' => 'تم رفض السائق وإشعاره.']);
     }
 }

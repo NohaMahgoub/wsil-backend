@@ -723,10 +723,19 @@ const UsersPage = ({ type }) => {
     headers: { 'Authorization': `Bearer ${localStorage.getItem('admin_token')}`, 'Accept': 'application/json' }
   }).then(() => setData(prev => prev.map(u => u.id === id ? { ...u, approval_status: 'approved' } : u)));
 
-  const rejectDriver = (id) => fetch(`/api/admin/drivers/${id}/reject`, {
-    method: 'POST',
-    headers: { 'Authorization': `Bearer ${localStorage.getItem('admin_token')}`, 'Accept': 'application/json' }
-  }).then(() => setData(prev => prev.map(u => u.id === id ? { ...u, approval_status: 'rejected' } : u)));
+  const rejectDriver = (id) => {
+  const reason = prompt('سبب الرفض (سيتم إرساله للسائق عبر واتساب):');
+    if (!reason) return;
+    fetch(`/api/admin/drivers/${id}/reject`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('admin_token')}`,
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+      },
+      body: JSON.stringify({ reason }),
+    }).then(() => setData(prev => prev.map(u => u.id === id ? { ...u, approval_status: 'rejected' } : u)));
+  };
 
   if (loading) return (
     <div style={{ color: C.textSec, padding: 40, textAlign: "center" }}>

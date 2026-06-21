@@ -15,7 +15,14 @@ class AuthController extends Controller
     {
         $request->validate([
             'name'            => 'required|string|max:255',
-            'phone'           => 'required|string|unique:users,phone',
+            'phone'           => [
+                                    'required',
+                                    'string',
+                                    \Illuminate\Validation\Rule::unique('users', 'phone')->where(function ($query) {
+                                        // Block re-registration only for pending or approved accounts
+                                        return $query->whereIn('approval_status', ['pending', 'approved']);
+                                    }),
+                                ],
             'email'           => 'nullable|email|unique:users,email',
             'password'        => 'required|string|min:6|confirmed',
             'role'            => 'required|in:vendor,driver',
@@ -47,6 +54,10 @@ class AuthController extends Controller
                 'message' => 'يجب التحقق من رقم الهاتف عبر واتساب أولاً.',
             ], 422);
         }
+
+        User::where('phone', $request->phone)
+            ->where('approval_status', 'rejected')
+            ->delete();
 
         $user = User::create([
             'name'            => $request->name,
