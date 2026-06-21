@@ -1768,10 +1768,17 @@ export default function WasilAdmin({ onLogout }) {
             <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
               <button onClick={toggleTheme} style={{ background: C.surfaceHi, border: `1px solid ${C.border}`, borderRadius: 8, width: 30, height: 30, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", fontSize: 14 }}>{dark ? "☀️" : "🌙"}</button>
               <div style={{ flex: 1, textAlign: "right" }}>
-                <div style={{ fontSize: 16, fontWeight: 800, color: C.primary }}>وصل | wsil</div>
+                <img
+                  src="/images/wsil-logo.png"
+                  alt="وصل"
+                  style={{ width: 36, borderRadius: 10, objectFit: "contain" }}
+                  onError={e => {
+                    e.target.style.display = 'none';
+                    e.target.nextSibling.style.display = 'flex';
+                  }}
+                />
                 <div style={{ fontSize: 12, color: C.textMuted }}>لوحة الإدارة</div>
               </div>
-              <div style={{ width: 36, height: 36, borderRadius: 10, background: `linear-gradient(135deg, ${C.primary}, ${C.primaryLight})`, display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 900, fontSize: 18, color: C.white }}>و</div>
             </div>
           </div>
           <nav style={{ flex: 1, padding: "16px 10px", overflowY: "auto" }}>
