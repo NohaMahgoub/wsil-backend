@@ -21,6 +21,7 @@ use App\Http\Controllers\Api\Driver\ReviewController as DriverReviewController;
 use App\Http\Controllers\Api\Admin\ReviewController as AdminReviewController;
 use App\Http\Controllers\Api\Admin\UserController as AdminUserController;
 use App\Http\Controllers\Api\FcmTokenController;
+use App\Http\Controllers\Api\Admin\NotificationAdminController;
 use App\Http\Controllers\Api\Admin\DashboardController as AdminDashboardController;
 use App\Http\Controllers\Api\ReviewController;
 use Illuminate\Http\Request;
@@ -194,6 +195,10 @@ Route::middleware(['auth:sanctum', 'role:admin'])
         // app version 
         Route::put('app-version',  [App\Http\Controllers\Api\Admin\AppVersionController::class, 'update']);
         Route::get('app-version',  [App\Http\Controllers\Api\Admin\AppVersionController::class, 'show']);
+
+
+        Route::post('admin/notifications/send', [NotificationAdminController::class, 'send']);
+        Route::get('admin/notifications/search-users', [NotificationAdminController::class, 'searchUsers']);    
 
         // Save settings
         Route::post('settings', function (Request $request) {

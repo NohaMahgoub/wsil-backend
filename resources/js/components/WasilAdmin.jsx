@@ -1,4 +1,5 @@
 import { useState, useEffect, useContext, createContext } from "react";
+import NotificationsPage from "../admin/pages/NotificationsPage";
 
 // ── WASIL BRAND TOKENS ───────────────────────────────────────────
 const DARK = {
@@ -20,7 +21,7 @@ const LIGHT = {
   purple:"#7C3AED",purpleBg:"#EDE9FE",
 };
 
-const ThemeContext = createContext(DARK);
+export const ThemeContext = createContext(DARK);
 const useTheme = () => useContext(ThemeContext);
 
 // ── SHARED UI ────────────────────────────────────────────────────
@@ -1709,6 +1710,8 @@ const NAV = [
   { key: "drivers",     label: "السائقون",     icon: "🚗", section: "data" },
   { key: "settings", label: "الإعدادات", icon: "⚙️", section: "data" },
   { key: "terms",    label: "الشروط والسياسات", icon: "📄", section: "data" },
+  { key: "notifications",  label: "الإشعارات",         icon: "🔔", section: "data" },
+
 ];
 
 // ── ROOT ─────────────────────────────────────────────────────────
@@ -1742,6 +1745,7 @@ export default function WasilAdmin({ onLogout }) {
       case "drivers":     return <UsersPage type="drivers" />;
       case "settings":    return <SettingsPage />;
       case "terms":       return <TermsPage />;
+      case "notifications":  return <NotificationsPage />;
       default:            return <DashboardPage setPage={setPage} />;
     }
   };
