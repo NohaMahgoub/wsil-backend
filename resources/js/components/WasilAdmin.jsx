@@ -1771,7 +1771,7 @@ export default function WasilAdmin({ onLogout }) {
                 <img
                   src="/images/wsil-logo.png"
                   alt="وصل"
-                  style={{ height: 36, borderRadius: 10, objectFit: "contain" }}
+                  style={{ height: 100, borderRadius: 10, objectFit: "contain" }}
                   onError={e => {
                     e.target.style.display = 'none';
                     e.target.nextSibling.style.display = 'flex';
