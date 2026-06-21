@@ -1095,25 +1095,48 @@ const filteredData = data.filter(u => {
                 padding: "14px", marginBottom: 12,
                 border: `1px solid ${C.border}`, textAlign: "right"
               }}>
-                <div style={{ fontSize: 11, color: C.textSec, marginBottom: 8 }}>معلومات المركبة</div>
-                <div style={{ fontSize: 13, color: C.textPri }}>
-                {{
-                  motorcycle:   '🏍️ دراجة نارية (موتر)',
-                  e_bicycle:    '⚡ عجلة كهربائية',
-                  small_car:    '🚗 سيارة صغيرة',
-                  suv:          '🚙 دفع رباعي / SUV',
-                  van:          '🚐 فان',
-                  small_truck:  '🚚 شاحنة صغيرة',
-                  large_truck:  '🚛 شاحنة كبيرة',
-                  rickshaw:     '🛺 ركشا',
-                }[selected.driver_profile.vehicle_type] ?? selected.driver_profile.vehicle_type ?? '—'}
-              </div>
-                <div style={{ fontSize: 12, color: C.textSec }}>
-                  {selected.driver_profile.vehicle_model ?? ''}
-                </div>
-                <div style={{ fontSize: 12, color: C.textSec }}>
-                  {selected.driver_profile.vehicle_plate ?? ''}
-                </div>
+                <div style={{ fontSize: 11, color: C.textSec, marginBottom: 10 }}>معلومات المركبة</div>
+                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
+                  <tbody>
+                    <tr style={{ borderBottom: `1px solid ${C.border}` }}>
+                      <td style={{ padding: "7px 4px", color: C.textSec, fontSize: 11, whiteSpace: "nowrap" }}>النوع</td>
+                      <td style={{ padding: "7px 4px", color: C.textPri, fontWeight: 600, textAlign: "right" }}>
+                        {{
+                          motorcycle:  '🏍️ دراجة نارية (موتر)',
+                          e_bicycle:   '⚡ عجلة كهربائية',
+                          small_car:   '🚗 سيارة صغيرة',
+                          suv:         '🚙 دفع رباعي / SUV',
+                          van:         '🚐 فان',
+                          small_truck: '🚚 شاحنة صغيرة',
+                          large_truck: '🚛 شاحنة كبيرة',
+                          rickshaw:    '🛺 ركشا',
+                        }[selected.driver_profile.vehicle_type] ?? selected.driver_profile.vehicle_type ?? '—'}
+                      </td>
+                    </tr>
+                    {selected.driver_profile.vehicle_model && (
+                      <tr style={{ borderBottom: `1px solid ${C.border}` }}>
+                        <td style={{ padding: "7px 4px", color: C.textSec, fontSize: 11, whiteSpace: "nowrap" }}>الموديل</td>
+                        <td style={{ padding: "7px 4px", color: C.textPri, textAlign: "right" }}>
+                          {selected.driver_profile.vehicle_model}
+                        </td>
+                      </tr>
+                    )}
+                    {selected.driver_profile.vehicle_plate && (
+                      <tr>
+                        <td style={{ padding: "7px 4px", color: C.textSec, fontSize: 11, whiteSpace: "nowrap" }}>اللوحة</td>
+                        <td style={{ padding: "7px 4px", textAlign: "right" }}>
+                          <span style={{
+                            background: C.primaryDim, color: C.primary,
+                            borderRadius: 6, padding: "2px 8px",
+                            fontSize: 12, fontWeight: 700,
+                          }}>
+                            {selected.driver_profile.vehicle_plate}
+                          </span>
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
 
                 {/* National ID Photo */}
                 {selected.driver_profile.national_id_photo_path && (
