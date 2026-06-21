@@ -1097,8 +1097,17 @@ const filteredData = data.filter(u => {
               }}>
                 <div style={{ fontSize: 11, color: C.textSec, marginBottom: 8 }}>معلومات المركبة</div>
                 <div style={{ fontSize: 13, color: C.textPri }}>
-                  🚗 {selected.driver_profile.vehicle_type ?? '—'}
-                </div>
+                {{
+                  motorcycle:   '🏍️ دراجة نارية (موتر)',
+                  e_bicycle:    '⚡ عجلة كهربائية',
+                  small_car:    '🚗 سيارة صغيرة',
+                  suv:          '🚙 دفع رباعي / SUV',
+                  van:          '🚐 فان',
+                  small_truck:  '🚚 شاحنة صغيرة',
+                  large_truck:  '🚛 شاحنة كبيرة',
+                  rickshaw:     '🛺 ركشا',
+                }[selected.driver_profile.vehicle_type] ?? selected.driver_profile.vehicle_type ?? '—'}
+              </div>
                 <div style={{ fontSize: 12, color: C.textSec }}>
                   {selected.driver_profile.vehicle_model ?? ''}
                 </div>

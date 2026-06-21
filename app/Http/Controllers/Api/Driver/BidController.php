@@ -12,6 +12,12 @@ class BidController extends Controller
     // Driver places a bid on an order
     public function store(Request $request, DeliveryOrder $order)
     {
+         if ($request->user()->approval_status !== 'approved') {
+            return response()->json([
+                'message' => 'حسابك قيد المراجعة. لا يمكنك تقديم عروض حتى يتم اعتمادك.',
+            ], 403);
+        }
+        
         // Order must be open
         if ($order->status !== 'open') {
             return response()->json([
