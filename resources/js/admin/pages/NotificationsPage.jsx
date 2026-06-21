@@ -33,6 +33,22 @@ const NotificationsPage = () => {
   const send = async () => {
     if (!title || !body) return;
     if (target === 'user' && !selectedUser) return;
+
+    const targetLabel = {
+      all:     'الكل (بائعون + سائقون)',
+      vendors: 'البائعون فقط',
+      drivers: 'السائقون فقط',
+      user:    selectedUser?.name ?? 'مستخدم محدد',
+    }[target];
+
+    const confirmed = window.confirm(
+      `هل أنت متأكد من إرسال هذا الإشعار؟\n\n` +
+      `العنوان: ${title}\n` +
+      `النص: ${body}\n` +
+      `إرسال إلى: ${targetLabel}`
+    );
+    if (!confirmed) return;
+
     setSending(true);
     setResult(null);
     const res = await fetch('/api/admin/notifications/send', {
