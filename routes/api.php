@@ -197,8 +197,8 @@ Route::middleware(['auth:sanctum', 'role:admin'])
         Route::get('app-version',  [App\Http\Controllers\Api\Admin\AppVersionController::class, 'show']);
 
 
-        Route::post('admin/notifications/send', [NotificationAdminController::class, 'send']);
-        Route::get('admin/notifications/search-users', [NotificationAdminController::class, 'searchUsers']);    
+        Route::post('notifications/send', [NotificationAdminController::class, 'send']);
+        Route::get('notifications/search-users', [NotificationAdminController::class, 'searchUsers']);    
 
         // Save settings
         Route::post('settings', function (Request $request) {
